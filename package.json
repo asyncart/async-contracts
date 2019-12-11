@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/conlan/async-contracts/issues"
   },
-  "homepage": "https://github.com/conlan/async-contracts#readme"
+  "homepage": "https://github.com/conlan/async-contracts#readme",
+  "dependencies": {
+    "openzeppelin-solidity": "^2.4.0"
+  }
 }

@@ -48,3 +48,5 @@ openzeppelin-docs
 # only used to package @openzeppelin/contracts
 contracts/build/
 contracts/README.md
+
+package-lock.json
