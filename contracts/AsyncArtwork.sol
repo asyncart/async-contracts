@@ -23,11 +23,20 @@ contract AsyncArtwork is ERC721Full {
     	uint256 price
     );
 
+    // An event when a token has been sold 
     event TokenSale (
     	address buyer,
     	uint256 tokenId,
     	uint256 salePrice
     );
+
+    // An event whenever a control token has been updated
+    event ControlUpdated (
+    	address updater,
+    	uint256 tokenId,
+    	int256 previousValue,
+    	int256 updatedValue
+	);
 
 	struct ControlToken {
 		// The minimum value this token can have (inclusive)
@@ -123,5 +132,25 @@ contract AsyncArtwork is ERC721Full {
     	// TODO
     	// Transfer token
     	emit BuyNowPriceSet(tokenId, amount);
+    }
+
+    function useControlToken(uint256 tokenId, int256 newValue) public {
+    	// check if sender is owner of token
+    	require(ownerOf(tokenId) == msg.sender, "Control tokens only usuable by owners.");
+
+    	// Enforce that the new value is valid
+    	require((newValue >= controlTokens[tokenId].minValue) && (newValue <= controlTokens[tokenId].maxValue), "Invalid value.");
+
+    	// Enforce that the new value is valid
+    	require(newValue != controlTokens[tokenId].currentValue, "Must provide different value.");
+
+    	// grab previous value for the event
+    	int256 previousValue = controlTokens[tokenId].currentValue;
+
+    	// Update token current value
+    	controlTokens[tokenId] = ControlToken(controlTokens[tokenId].minValue, controlTokens[tokenId].maxValue, newValue);
+
+    	// emit event
+    	emit ControlUpdated(msg.sender, tokenId, previousValue, newValue);
     }
 }
