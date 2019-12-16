@@ -12,9 +12,21 @@ contract AsyncArtwork is ERC721Full {
     );
 
 	// An event whenever an bid is withdrawn
-    event bidWithdrawn (
+    event BidWithdrawn (
     	address bidder,
     	uint256 tokenId
+    );
+
+    // An event whenever a buy now price has been set
+    event BuyNowPriceSet (
+    	uint256 tokenId,
+    	uint256 price
+    );
+
+    event TokenSale (
+    	address buyer,
+    	uint256 tokenId,
+    	uint256 salePrice
     );
 
 	struct ControlToken {
@@ -88,7 +100,7 @@ contract AsyncArtwork is ERC721Full {
     function withdrawBid(uint256 tokenId) public {
     	// TODO
     	// Return bid amount back to owner
-    	// Emit event
+    	emit BidWithdrawn(msg.sender, tokenId);
     }
 
     function takeBuyNowPrice(uint256 tokenId) public payable {
@@ -110,5 +122,6 @@ contract AsyncArtwork is ERC721Full {
     function makeBuyNowPrice(uint256 tokenId, uint256 amount) public {
     	// TODO
     	// Transfer token
+    	emit BuyNowPriceSet(tokenId, amount);
     }
 }
