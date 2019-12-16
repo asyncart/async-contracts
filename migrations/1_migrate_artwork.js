@@ -1,7 +1,7 @@
 const AsyncArtwork = artifacts.require("./AsyncArtwork.sol");
 
 module.exports = async function(deployer) {
-  await deployer.deploy(AsyncArtwork, "\"Bees of Tomorrow\"", "ASYNC-BEES")
+  await deployer.deploy(AsyncArtwork, "\"Bees of Tomorrow\"", "ASYNC-BEES", 2)
 
   let artworkInstance = await AsyncArtwork.deployed()
 
@@ -13,13 +13,15 @@ module.exports = async function(deployer) {
 
   await artworkInstance.mintControlTokenTo("0x2c175DC859442E84914C6c7fFd3c06819c91bb55", 2, -100, 100, 50, "b")
 
+  await artworkInstance.mintControlTokenTo("0x2c175DC859442E84914C6c7fFd3c06819c91bb55", 3, -100, 100, 50, "c")
+
   var controlToken = await artworkInstance.controlTokens(2)
   
   console.log(controlToken.minValue.toString())
   console.log(controlToken.maxValue.toString())
   console.log(controlToken.currentValue.toString())
 
-
+  console.log(await artworkInstance.controlTokenCount())
 
   console.log((await artworkInstance.balanceOf("0x2c175DC859442E84914C6c7fFd3c06819c91bb55")).toString())
 };
