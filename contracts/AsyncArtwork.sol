@@ -117,15 +117,18 @@ contract AsyncArtwork is ERC721Full {
     		require(msg.value > highestBids[tokenId].amount, "Bid must be higher than previous bid amount.");
     		
     		if (secondHighestBids[tokenId].exists) {
-    			// TODO return current second highest bidder amount back
+    			// return current second highest bidder amount back
+    			secondHighestBids[tokenId].bidder.transfer(secondHighestBids[tokenId].amount)
     		}
 
+    		// convert current highest bid to second highest bid
     		secondHighestBids[tokenId] = highestBids[tokenId];
     	}
 
+    	// set the new highest bid
     	highestBids[tokenId] = PendingBid(msg.sender, msg.value, true);
 
-    	// Emit event
+    	// Emit event for the bid proposal
     	emit BidProposed(msg.sender, tokenId, msg.value);
     }
 
@@ -149,6 +152,7 @@ contract AsyncArtwork is ERC721Full {
     	// TODO
     	// Take highest bidder money    	
     	// Return rest of bidder's money
+    	// reset buy price
     	// Transfer token
     	// Emit event
     }
