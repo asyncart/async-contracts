@@ -18,7 +18,7 @@ contract AsyncArtwork is ERC721Full {
     );
 
     // An event whenever a buy now price has been set
-    event BuyNowPriceSet (
+    event BuyPriceSet (
     	uint256 tokenId,
     	uint256 price
     );
@@ -47,7 +47,19 @@ contract AsyncArtwork is ERC721Full {
 		int256 currentValue;
 	}
 
+	struct PendingBid {
+		address bidder;
+		uint256 amount;
+		bool exists;
+	}
+
 	mapping (uint256 => ControlToken) public controlTokens;
+	
+	mapping (uint256 => uint256) public buyPrices;
+	
+	mapping (uint256 => PendingBid) public highestBids;
+	mapping (uint256 => PendingBid) public secondHighestBids;
+
 
 	uint256 private _maxControlTokenCount;
 
@@ -99,11 +111,22 @@ contract AsyncArtwork is ERC721Full {
 
     // Bidder functions
     function bid(uint256 tokenId) public payable {
-    	// TODO
-    	// Check that bid amount is higher than highest bid
-    	// Return the previous bidder's money (except second highest)
-    	// Hold bid amount in escrow
+    	require(ownerOf(tokenId) != msg.sender, "Token owners can't bid on their own tokens.");
+
+    	if (highestBids[tokenId].exists) {
+    		require(msg.value > highestBids[tokenId].amount, "Bid must be higher than previous bid amount.");
+    		
+    		if (secondHighestBids[tokenId].exists) {
+    			// TODO return current second highest bidder amount back
+    		}
+
+    		secondHighestBids[tokenId] = highestBids[tokenId];
+    	}
+
+    	highestBids[tokenId] = PendingBid(msg.sender, msg.value, true);
+
     	// Emit event
+    	emit BidProposed(msg.sender, tokenId, msg.value);
     }
 
     function withdrawBid(uint256 tokenId) public {
@@ -112,7 +135,7 @@ contract AsyncArtwork is ERC721Full {
     	emit BidWithdrawn(msg.sender, tokenId);
     }
 
-    function takeBuyNowPrice(uint256 tokenId) public payable {
+    function takeBuyPrice(uint256 tokenId) public payable {
     	// TODO
     	// Return all bidder's money
     	// Transfer token
@@ -121,6 +144,8 @@ contract AsyncArtwork is ERC721Full {
 
     // Owner functions
     function acceptHighestBid(uint256 tokenId) public {
+    	// check if sender is owner of token
+    	require(ownerOf(tokenId) == msg.sender, "Only token owners can accept bids.");
     	// TODO
     	// Take highest bidder money    	
     	// Return rest of bidder's money
@@ -128,10 +153,13 @@ contract AsyncArtwork is ERC721Full {
     	// Emit event
     }
 
-    function makeBuyNowPrice(uint256 tokenId, uint256 amount) public {
-    	// TODO
-    	// Transfer token
-    	emit BuyNowPriceSet(tokenId, amount);
+    function makeBuyPrice(uint256 tokenId, uint256 amount) public {
+    	// check if sender is owner of token
+    	require(ownerOf(tokenId) == msg.sender, "Only token owners can set buy price.");
+    	// set the buy price
+    	buyPrices[tokenId] = amount;
+    	// emit event
+    	emit BuyPriceSet(tokenId, amount);
     }
 
     function useControlToken(uint256 tokenId, int256 newValue) public {
