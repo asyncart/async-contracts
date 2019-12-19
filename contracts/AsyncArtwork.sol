@@ -1,7 +1,6 @@
 pragma solidity ^0.5.12;
 
 import "../node_modules/openzeppelin-solidity/contracts/token/ERC721/ERC721Full.sol";
-import "../node_modules/openzeppelin-solidity/contracts/token/ERC721/ERC721Mintable.sol";
 
 contract AsyncArtwork is ERC721Full {
 	// An event whenever a bid is proposed  	
@@ -45,6 +44,7 @@ contract AsyncArtwork is ERC721Full {
     	int256 updatedValue
 	);
 
+    // struct for a token that controls part of the artwork
 	struct ControlToken {
 		// The minimum value this token can have (inclusive)
 		int256 minValue;
@@ -83,16 +83,16 @@ contract AsyncArtwork is ERC721Full {
 
   		_maxControlTokenCount = maxControlTokenCount;
   	}
+
+  	// TODO method to say when an artwork has minted all its tokens and is ready for use
   	
-    function mintOwnerTokenTo(
-        address to,
-        string memory tokenURI
-    ) public
-    {
-        super._mint(to, OWNER_TOKEN_ID);
+  	// Mint the token that represents ownership of the entire artwork
+    function mintOwnerTokenTo(address to, string memory tokenURI) public {
+        super._safeMint(to, OWNER_TOKEN_ID);
         super._setTokenURI(OWNER_TOKEN_ID, tokenURI);
     }
 
+    // Mint a control token with certain limitations as to what it can control
     function mintControlTokenTo(
         address to,
         uint256 tokenId,
@@ -100,35 +100,40 @@ contract AsyncArtwork is ERC721Full {
         int256 maxValue,
         int256 currentValue,
         string memory tokenURI
-    ) public
-    {
-    	// TODO enforce that owner token has been minted already
-       	
-       	// TODO enforce that maxValue is greater than or equal to minValue
-       	// TODO enforce that currentValue is valid
-
+    ) public {
+       	// enforce that maxValue is greater than or equal to minValue
+       	require (maxValue >= minValue, "Max value must be greater than or equal to min value.");
+       	// enforce that currentValue is valid
+       	require((currentValue >= minValue) && (currentValue <= maxValue), "Invalid current value.");
+       	// enforce that we haven't minted more than the number of allowed control tokens
     	require(controlTokenCount < _maxControlTokenCount, "Max number of control tokens minted.");
-
     	// enforce that tokenId isn't the control token id
     	require(tokenId != OWNER_TOKEN_ID, "Token ID reserved for owner token id.");
 
-        super._mint(to, tokenId);
+    	// mint the token
+        super._safeMint(to, tokenId);
+        // set the URI
         super._setTokenURI(tokenId, tokenURI);
 
+        // create the control token
         controlTokens[tokenId] = ControlToken(minValue, maxValue, currentValue);
 
+        // increase control token counter
         controlTokenCount++;
     }
 
     // Bidder functions
     function bid(uint256 tokenId) public payable {
+    	// don't let owners bid on their own tokens
     	require(ownerOf(tokenId) != msg.sender, "Token owners can't bid on their own tokens.");
 
+    	// check if there's a highest bid
     	if (highestBids[tokenId].exists) {
+    		// enforce that this bid is higher (TODO require a specific amount for increments?)
     		require(msg.value > highestBids[tokenId].amount, "Bid must be higher than previous bid amount.");
     		
-    		if (secondHighestBids[tokenId].exists) {
-    			// return current second highest bidder amount back
+    		// return current second highest bidder amount back
+    		if (secondHighestBids[tokenId].exists) {    			
     			secondHighestBids[tokenId].bidder.transfer(secondHighestBids[tokenId].amount);
     		}
 
@@ -167,23 +172,33 @@ contract AsyncArtwork is ERC721Full {
 
     function takeBuyPrice(uint256 tokenId) public payable {
     	// TODO
-    	// Return all bidder's money
+    	// check if sender is owner of token
+    	require(ownerOf(tokenId) != msg.sender, "Owners can't rebuy their own token.");
+    	// Return all highest bidder's money
+    	// Return all second highest bidder money
+    	// Distribute percentage back to Artist(s) + Platform
     	// Transfer token
     	// Emit event
     }
 
     // Owner functions
+    // Allow owner to accept the highest bid for a token
     function acceptHighestBid(uint256 tokenId) public {
     	// check if sender is owner of token
     	require(ownerOf(tokenId) == msg.sender, "Only token owners can accept bids.");
+    	// check if there's a bid to accept
+    	require (highestBids[tokenId].exists, "No pending bid to accept!");
     	// TODO
     	// Take highest bidder money    	
-    	// Return rest of bidder's money
+    	// Return rest of second highest bidder's money
+    	// Distribute percentage back to Artist(s) + Platform
     	// reset buy price
+    	buyPrices[tokenId] = 0;
     	// Transfer token
     	// Emit event
     }
 
+    // Allows owner of a control token to set an immediate buy price
     function makeBuyPrice(uint256 tokenId, uint256 amount) public {
     	// check if sender is owner of token
     	require(ownerOf(tokenId) == msg.sender, "Only token owners can set buy price.");
@@ -193,6 +208,7 @@ contract AsyncArtwork is ERC721Full {
     	emit BuyPriceSet(tokenId, amount);
     }
 
+    // Allows owner of a control token to update its value
     function useControlToken(uint256 tokenId, int256 newValue) public {
     	// check if sender is owner of token
     	require(ownerOf(tokenId) == msg.sender, "Control tokens only usuable by owners.");
