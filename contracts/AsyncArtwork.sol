@@ -25,16 +25,23 @@ contract AsyncArtwork is ERC721Full {
 
     // An event when a token has been sold 
     event TokenSale (
+    	// the address of the buyer
     	address buyer,
+    	// the id of the token
     	uint256 tokenId,
+    	// the price that the token was sold for
     	uint256 salePrice
     );
 
     // An event whenever a control token has been updated
     event ControlUpdated (
+    	// the address of who updated this control
     	address updater,
+    	// the id of the token
     	uint256 tokenId,
+    	// the previous value that the token had before this update (for clients who want to animate the change)
     	int256 previousValue,
+    	// the new updated value
     	int256 updatedValue
 	);
 
@@ -47,9 +54,13 @@ contract AsyncArtwork is ERC721Full {
 		int256 currentValue;
 	}
 
+	// struct for a pending bid 
 	struct PendingBid {
+		// the address of the bidder
 		address payable bidder;
+		// the amount that they bid
 		uint256 amount;
+		// false by default, true once instantiated
 		bool exists;
 	}
 
@@ -132,11 +143,26 @@ contract AsyncArtwork is ERC721Full {
     	emit BidProposed(msg.sender, tokenId, msg.value);
     }
 
+    // allows an address with a pending bid to withdraw it
     function withdrawBid(uint256 tokenId) public {
-    	// TODO
     	// Return bid amount back to owner
-    	// If this was highest bid, then boost second highest bid up to first 
-    	emit BidWithdrawn(msg.sender, tokenId);
+    	if ((highestBids[tokenId].exists) && (highestBids[tokenId].bidder == msg.sender)) {
+    		// second highest bid now becomes the highest
+			highestBids[tokenId] = secondHighestBids[tokenId];
+
+			// If this was highest bid, then boost second highest bid up to first 	
+			if (secondHighestBids[tokenId].exists) {
+				// clear the second highest bid
+				secondHighestBids[tokenId] = PendingBid(address(0), 0, false);
+			}
+
+    		// only emit an event when the highest bid is withdrawn
+    		emit BidWithdrawn(msg.sender, tokenId);
+    	} else if ((secondHighestBids[tokenId].exists) && (secondHighestBids[tokenId].bidder == msg.sender)) {
+    		secondHighestBids[tokenId] = PendingBid(address(0), 0, false);
+    	} else {
+    		revert("No bid to withdraw.");
+    	}
     }
 
     function takeBuyPrice(uint256 tokenId) public payable {
