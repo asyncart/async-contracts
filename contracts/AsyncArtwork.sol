@@ -48,7 +48,7 @@ contract AsyncArtwork is ERC721Full {
 	}
 
 	struct PendingBid {
-		address bidder;
+		address payable bidder;
 		uint256 amount;
 		bool exists;
 	}
@@ -118,7 +118,7 @@ contract AsyncArtwork is ERC721Full {
     		
     		if (secondHighestBids[tokenId].exists) {
     			// return current second highest bidder amount back
-    			secondHighestBids[tokenId].bidder.transfer(secondHighestBids[tokenId].amount)
+    			secondHighestBids[tokenId].bidder.transfer(secondHighestBids[tokenId].amount);
     		}
 
     		// convert current highest bid to second highest bid
@@ -135,6 +135,7 @@ contract AsyncArtwork is ERC721Full {
     function withdrawBid(uint256 tokenId) public {
     	// TODO
     	// Return bid amount back to owner
+    	// If this was highest bid, then boost second highest bid up to first 
     	emit BidWithdrawn(msg.sender, tokenId);
     }
 
