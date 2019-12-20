@@ -3,22 +3,22 @@ const AsyncArtwork = artifacts.require("./AsyncArtwork.sol");
 module.exports = async function(deployer) {
   await deployer.deploy(AsyncArtwork, "\"Bees of Tomorrow\"", "ASYNC-BEES", 2)
 
-  let artInstance = await AsyncArtwork.deployed()
+  let artworkInstance = await AsyncArtwork.deployed()
 
-  // console.log(await artworkInstance.name())
-  // console.log(await artworkInstance.symbol())  
+  console.log(await artworkInstance.name())
+  console.log(await artworkInstance.symbol())  
 
-  // await artworkInstance.mintOwnerTokenTo("0x2c175DC859442E84914C6c7fFd3c06819c91bb55", "a")  
+  await artworkInstance.mintOwnerTokenTo("0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05", "a")  
 
-  // await artworkInstance.mintControlTokenTo("0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05", 2, -100, 100, 50, "b")
+  await artworkInstance.mintControlTokenTo("0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05", 2, 0, 1000, 1000, "b")
 
   // await artworkInstance.mintControlTokenTo("0x2c175DC859442E84914C6c7fFd3c06819c91bb55", 3, -10, 10, 5, "c")
 
-  // var controlToken = await artworkInstance.controlTokens(2)
+  var controlToken = await artworkInstance.controlTokens(2)
   
-  // // console.log(controlToken.minValue.toString())
-  // // console.log(controlToken.maxValue.toString())
-  // console.log("before: " + (await controlToken.currentValue).toString())
+  console.log(controlToken.minValue.toString())
+  console.log(controlToken.maxValue.toString())
+  console.log("before: " + (await controlToken.currentValue).toString())
 
   // // use the control token
   // await artworkInstance.useControlToken(2, 8);
