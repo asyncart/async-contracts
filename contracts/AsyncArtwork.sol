@@ -51,7 +51,7 @@ contract AsyncArtwork is ERC721Full {
         // the expected number of levers this control token will have
         uint256 expectedNumControlLevers;        
         // number that tracks how many levers there are
-        uint256 numControlLevers;        
+        uint256 numControlLevers;
     }
 
     struct ControlLever {
@@ -75,14 +75,15 @@ contract AsyncArtwork is ERC721Full {
 		bool exists;
 	}
 
-	mapping (uint256 => ControlToken) public controlTokens;
+	mapping (uint256 => ControlToken) public controlTokenMapping;
+    uint256[] public controlTokenIds;
 	
 	mapping (uint256 => uint256) public buyPrices;
 	
 	mapping (uint256 => PendingBid) public highestBids;
 	mapping (uint256 => PendingBid) public secondHighestBids;
 
-    uint256 private constant OWNER_TOKEN_ID = 1;
+    uint256 private constant OWNER_TOKEN_ID = 0;
 	uint256 private _expectedNumControlTokens;
 
 	uint256 public numControlTokens;
@@ -92,8 +93,6 @@ contract AsyncArtwork is ERC721Full {
 
   		_expectedNumControlTokens = expectedNumControlTokens;
   	}
-
-  	// TODO view method to say when an artwork has minted all its tokens and is ready/finalized for use
   	
   	// Mint the token that represents ownership of the entire artwork
     function mintOwnerTokenTo(address to, string memory tokenURI) public {
@@ -112,16 +111,29 @@ contract AsyncArtwork is ERC721Full {
     	require(numControlTokens < _expectedNumControlTokens, "Max number of control tokens minted.");
     	// enforce that tokenId isn't the control token id
     	require(tokenId != OWNER_TOKEN_ID, "Token ID reserved for owner token id.");
-
     	// mint the token
         super._safeMint(to, tokenId);
         // set the URI
         super._setTokenURI(tokenId, tokenURI);
-
         // create the control token
-        controlTokens[tokenId] = ControlToken(expectedNumControlLevers, 0);
+        controlTokenMapping[tokenId] = ControlToken(expectedNumControlLevers, 0);
+        // track an array of our token ids
+        controlTokenIds.push(tokenId);
         // increase control token counter
         numControlTokens++;
+    }
+
+    // modifier to ensure that an artwork has minted all its tokens and is finalized for use
+    modifier isArtworkFinalized() {
+        require (numControlTokens == _expectedNumControlTokens, "All control tokens must be minted first.");
+
+        for (uint i = 0; i < numControlTokens; i++) {
+            uint256 tokenId = controlTokenIds[i];
+
+            require (controlTokenMapping[tokenId].numControlLevers == controlTokenMapping[tokenId].expectedNumControlLevers, "All control tokens must have their expected levers set up.");
+        }
+        
+        _;
     }
 
     // add a control lever to a control token
@@ -131,21 +143,19 @@ contract AsyncArtwork is ERC721Full {
         // enforce that currentValue is valid
         require((startValue >= minValue) && (startValue <= maxValue), "Invalid start value.");
         // TODO require msg.sender is one of the initial artists
-        // TODO confirm that we're not finalized
-        ControlToken storage controlToken = controlTokens[tokenId];
-
+        ControlToken storage controlToken = controlTokenMapping[tokenId];
+        // ensure that there's still some room for levers to be added
+        require (controlToken.numControlLevers < controlToken.expectedNumControlLevers, "Control lever has already been added.");
         // ensure that we're not trying to create the same lever twice
         require(controlToken.levers[leverId].exists == false, "Control lever has already been added.");
-
         // add the lever to this token
         controlToken.levers[leverId] = ControlLever(minValue, maxValue, startValue, true);
-
         // update the number of control levers that have been created for this token
         controlToken.numControlLevers++;
     }
 
     // Bidder functions
-    function bid(uint256 tokenId) public payable {
+    function bid(uint256 tokenId) public payable isArtworkFinalized {
     	// don't let owners bid on their own tokens
     	require(ownerOf(tokenId) != msg.sender, "Token owners can't bid on their own tokens.");
 
@@ -171,7 +181,7 @@ contract AsyncArtwork is ERC721Full {
     }
 
     // allows an address with a pending bid to withdraw it
-    function withdrawBid(uint256 tokenId) public {
+    function withdrawBid(uint256 tokenId) public isArtworkFinalized {
     	// Return bid amount back to owner
     	if ((highestBids[tokenId].exists) && (highestBids[tokenId].bidder == msg.sender)) {
     		// second highest bid now becomes the highest
@@ -192,7 +202,8 @@ contract AsyncArtwork is ERC721Full {
     	}
     }
 
-    function takeBuyPrice(uint256 tokenId) public payable {
+    // Buy the artwork for the currently set price
+    function takeBuyPrice(uint256 tokenId) public payable isArtworkFinalized {
     	// TODO
     	// check if sender is owner of token
     	require(ownerOf(tokenId) != msg.sender, "Owners can't rebuy their own token.");
@@ -205,7 +216,7 @@ contract AsyncArtwork is ERC721Full {
 
     // Owner functions
     // Allow owner to accept the highest bid for a token
-    function acceptHighestBid(uint256 tokenId) public {
+    function acceptHighestBid(uint256 tokenId) public isArtworkFinalized {
     	// check if sender is owner of token
     	require(ownerOf(tokenId) == msg.sender, "Only token owners can accept bids.");
     	// check if there's a bid to accept
@@ -221,7 +232,7 @@ contract AsyncArtwork is ERC721Full {
     }
 
     // Allows owner of a control token to set an immediate buy price
-    function makeBuyPrice(uint256 tokenId, uint256 amount) public {
+    function makeBuyPrice(uint256 tokenId, uint256 amount) public isArtworkFinalized {
     	// check if sender is owner of token
     	require(ownerOf(tokenId) == msg.sender, "Only token owners can set buy price.");
     	// set the buy price
@@ -230,29 +241,26 @@ contract AsyncArtwork is ERC721Full {
     	emit BuyPriceSet(tokenId, amount);
     }
 
+    // used during the render process to determine values
+    function getControlLeverValue(uint256 tokenId, uint256 leverId) public view isArtworkFinalized returns (int256) {
+        return controlTokenMapping[tokenId].levers[leverId].currentValue;
+    }
+
     // Allows owner of a control token to update its value
     // TODO take an array of lever ids and their values?
-    function useControlToken(uint256 tokenId, uint256 leverId, int256 newValue) public {
+    function useControlToken(uint256 tokenId, uint256 leverId, int256 newValue) public isArtworkFinalized {
     	// check if sender is owner of token
     	require(ownerOf(tokenId) == msg.sender, "Control tokens only usuable by owners.");
-
-        // TODO confirm that this artwork is finalized
-
         // get the control lever
-        ControlLever storage lever = controlTokens[tokenId].levers[leverId];
-
+        ControlLever storage lever = controlTokenMapping[tokenId].levers[leverId];
     	// Enforce that the new value is valid        
     	require((newValue >= lever.minValue) && (newValue <= lever.maxValue), "Invalid value.");
-
     	// Enforce that the new value is different
     	require(newValue != lever.currentValue, "Must provide different value.");
-
-    	// grab previous value for the event
+    	// grab previous value for the event emit
     	int256 previousValue = lever.currentValue;
-
     	// Update token current value
-    	controlTokens[tokenId].levers[leverId] = ControlLever(lever.minValue, lever.maxValue, newValue, true);
-
+    	controlTokenMapping[tokenId].levers[leverId] = ControlLever(lever.minValue, lever.maxValue, newValue, true);
     	// emit event
     	emit ControlLeverUpdated(msg.sender, tokenId, previousValue, newValue);
     }
