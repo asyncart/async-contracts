@@ -33,7 +33,7 @@ contract AsyncArtwork is ERC721Full {
     );
 
     // An event whenever a control token has been updated
-    event ControlUpdated (
+    event ControlLeverUpdated (
     	// the address of who updated this control
     	address updater,
     	// the id of the token
@@ -45,14 +45,25 @@ contract AsyncArtwork is ERC721Full {
 	);
 
     // struct for a token that controls part of the artwork
-	struct ControlToken {
-		// The minimum value this token can have (inclusive)
-		int256 minValue;
-		// The maximum value this token can have (inclusive)
-		int256 maxValue;
-		// The current value for this token
-		int256 currentValue;
-	}
+    struct ControlToken {
+        // the levers that this control token can use
+        mapping (uint256 => ControlLever) levers;
+        // the expected number of levers this control token will have
+        uint256 expectedNumControlLevers;        
+        // number that tracks how many levers there are
+        uint256 numControlLevers;        
+    }
+
+    struct ControlLever {
+        // // The minimum value this token can have (inclusive)
+        int256 minValue;
+        // The maximum value this token can have (inclusive)
+        int256 maxValue;
+        // The current value for this token
+        int256 currentValue;
+        // false by default, true once instantiated
+        bool exists;
+    }
 
 	// struct for a pending bid 
 	struct PendingBid {
@@ -71,20 +82,18 @@ contract AsyncArtwork is ERC721Full {
 	mapping (uint256 => PendingBid) public highestBids;
 	mapping (uint256 => PendingBid) public secondHighestBids;
 
+    uint256 private constant OWNER_TOKEN_ID = 1;
+	uint256 private _expectedNumControlTokens;
 
-	uint256 private _maxControlTokenCount;
+	uint256 public numControlTokens;
 
-	uint256 public controlTokenCount;
-
-	uint256 public constant OWNER_TOKEN_ID = 1;
-
-	constructor (string memory name, string memory symbol, uint256 maxControlTokenCount) public 
+	constructor (string memory name, string memory symbol, uint256 expectedNumControlTokens) public 
   		ERC721Full(name, symbol) {	
 
-  		_maxControlTokenCount = maxControlTokenCount;
+  		_expectedNumControlTokens = expectedNumControlTokens;
   	}
 
-  	// TODO method to say when an artwork has minted all its tokens and is ready for use
+  	// TODO view method to say when an artwork has minted all its tokens and is ready/finalized for use
   	
   	// Mint the token that represents ownership of the entire artwork
     function mintOwnerTokenTo(address to, string memory tokenURI) public {
@@ -95,18 +104,12 @@ contract AsyncArtwork is ERC721Full {
     // Mint a control token with certain limitations as to what it can control
     function mintControlTokenTo(
         address to,
-        uint256 tokenId,
-        int256 minValue,
-        int256 maxValue,
-        int256 currentValue,
+        uint256 tokenId,    
+        uint256 expectedNumControlLevers,    
         string memory tokenURI
-    ) public {
-       	// enforce that maxValue is greater than or equal to minValue
-       	require (maxValue >= minValue, "Max value must be greater than or equal to min value.");
-       	// enforce that currentValue is valid
-       	require((currentValue >= minValue) && (currentValue <= maxValue), "Invalid current value.");
+    ) public {       	
        	// enforce that we haven't minted more than the number of allowed control tokens
-    	require(controlTokenCount < _maxControlTokenCount, "Max number of control tokens minted.");
+    	require(numControlTokens < _expectedNumControlTokens, "Max number of control tokens minted.");
     	// enforce that tokenId isn't the control token id
     	require(tokenId != OWNER_TOKEN_ID, "Token ID reserved for owner token id.");
 
@@ -116,10 +119,29 @@ contract AsyncArtwork is ERC721Full {
         super._setTokenURI(tokenId, tokenURI);
 
         // create the control token
-        controlTokens[tokenId] = ControlToken(minValue, maxValue, currentValue);
-
+        controlTokens[tokenId] = ControlToken(expectedNumControlLevers, 0);
         // increase control token counter
-        controlTokenCount++;
+        numControlTokens++;
+    }
+
+    // add a control lever to a control token
+    function addControlTokenLever(uint256 tokenId, uint256 leverId, int256 minValue, int256 maxValue, int256 startValue) public {
+        // enforce that maxValue is greater than or equal to minValue
+        require (maxValue >= minValue, "Max value must be greater than or equal to min value.");
+        // enforce that currentValue is valid
+        require((startValue >= minValue) && (startValue <= maxValue), "Invalid start value.");
+        // TODO require msg.sender is one of the initial artists
+        // TODO confirm that we're not finalized
+        ControlToken storage controlToken = controlTokens[tokenId];
+
+        // ensure that we're not trying to create the same lever twice
+        require(controlToken.levers[leverId].exists == false, "Control lever has already been added.");
+
+        // add the lever to this token
+        controlToken.levers[leverId] = ControlLever(minValue, maxValue, startValue, true);
+
+        // update the number of control levers that have been created for this token
+        controlToken.numControlLevers++;
     }
 
     // Bidder functions
@@ -209,23 +231,29 @@ contract AsyncArtwork is ERC721Full {
     }
 
     // Allows owner of a control token to update its value
-    function useControlToken(uint256 tokenId, int256 newValue) public {
+    // TODO take an array of lever ids and their values?
+    function useControlToken(uint256 tokenId, uint256 leverId, int256 newValue) public {
     	// check if sender is owner of token
     	require(ownerOf(tokenId) == msg.sender, "Control tokens only usuable by owners.");
 
-    	// Enforce that the new value is valid
-    	require((newValue >= controlTokens[tokenId].minValue) && (newValue <= controlTokens[tokenId].maxValue), "Invalid value.");
+        // TODO confirm that this artwork is finalized
 
-    	// Enforce that the new value is valid
-    	require(newValue != controlTokens[tokenId].currentValue, "Must provide different value.");
+        // get the control lever
+        ControlLever storage lever = controlTokens[tokenId].levers[leverId];
+
+    	// Enforce that the new value is valid        
+    	require((newValue >= lever.minValue) && (newValue <= lever.maxValue), "Invalid value.");
+
+    	// Enforce that the new value is different
+    	require(newValue != lever.currentValue, "Must provide different value.");
 
     	// grab previous value for the event
-    	int256 previousValue = controlTokens[tokenId].currentValue;
+    	int256 previousValue = lever.currentValue;
 
     	// Update token current value
-    	controlTokens[tokenId] = ControlToken(controlTokens[tokenId].minValue, controlTokens[tokenId].maxValue, newValue);
+    	controlTokens[tokenId].levers[leverId] = ControlLever(lever.minValue, lever.maxValue, newValue, true);
 
     	// emit event
-    	emit ControlUpdated(msg.sender, tokenId, previousValue, newValue);
+    	emit ControlLeverUpdated(msg.sender, tokenId, previousValue, newValue);
     }
 }
