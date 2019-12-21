@@ -136,22 +136,38 @@ contract AsyncArtwork is ERC721Full {
         _;
     }
 
-    // add a control lever to a control token
-    function addControlTokenLever(uint256 tokenId, uint256 leverId, int256 minValue, int256 maxValue, int256 startValue) public {
-        // enforce that maxValue is greater than or equal to minValue
-        require (maxValue >= minValue, "Max value must be greater than or equal to min value.");
-        // enforce that currentValue is valid
-        require((startValue >= minValue) && (startValue <= maxValue), "Invalid start value.");
-        // TODO require msg.sender is one of the initial artists
-        ControlToken storage controlToken = controlTokenMapping[tokenId];
-        // ensure that there's still some room for levers to be added
-        require (controlToken.numControlLevers < controlToken.expectedNumControlLevers, "Control lever has already been added.");
-        // ensure that we're not trying to create the same lever twice
-        require(controlToken.levers[leverId].exists == false, "Control lever has already been added.");
-        // add the lever to this token
-        controlToken.levers[leverId] = ControlLever(minValue, maxValue, startValue, true);
-        // update the number of control levers that have been created for this token
-        controlToken.numControlLevers++;
+    // add control lever(s) to a control token
+    function addControlTokenLevers(uint256 tokenId, uint256[] memory leverIds, int256[] memory minValues, int256[] memory maxValues,
+            int256[] memory startValues) public {
+        // enforce that at least 1 lever id is passed in
+        require(leverIds.length > 0, "Must pass in at least 1 lever id.");
+        // enforce that the length of all the array lengths are equal
+        require((leverIds.length == minValues.length) && (minValues.length == maxValues.length) && (maxValues.length == startValues.length),
+            "LeverIds, MinValues, MaxValues, and StartValues arrays must be same length.");
+
+        // // TODO require msg.sender is one of the initial artists
+        ControlToken storage controlToken = controlTokenMapping[tokenId];    
+
+        // for each array...
+        for (uint i = 0; i < leverIds.length; i++) {
+            // enforce that maxValue is greater than or equal to minValue
+            require (maxValues[i] >= minValues[i], "Max value must be greater than or equal to min value.");
+
+            // enforce that currentValue is valid
+            require((startValues[i] >= minValues[i]) && (startValues[i] <= maxValues[i]), "Invalid start value.");
+
+            // ensure that there's still some room for levers to be added
+            require (controlToken.numControlLevers < controlToken.expectedNumControlLevers, "Control lever has already been added.");
+
+            // ensure that we're not trying to create the same lever twice
+            require(controlToken.levers[leverIds[i]].exists == false, "Control lever has already been added.");
+
+            // add the lever to this token
+            controlToken.levers[leverIds[i]] = ControlLever(minValues[i], maxValues[i], startValues[i], true);
+
+            // update the number of control levers that have been created for this token
+            controlToken.numControlLevers++;
+        }        
     }
 
     // Bidder functions
