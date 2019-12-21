@@ -10,30 +10,36 @@ module.exports = async function(deployer) {
 
   await artworkInstance.mintOwnerTokenTo("0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05", "a")  
 
-  await artworkInstance.mintControlTokenTo("0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05", 1, 2, "b")
+  var leverIds = [0, 1];
+  var CONTROL_TOKEN_ID = 1;
 
-  await artworkInstance.addControlTokenLever(1, 0, 0, 1000, 0)
-  await artworkInstance.addControlTokenLever(1, 1, 0, 1000, 0)
+  await artworkInstance.mintControlTokenTo("0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05", CONTROL_TOKEN_ID, leverIds.length, "b")
+  
+  var minValues = [0, 0];
+  var maxValues = [1000, 1000];
+  var startValues = [250, 500];
+
+  await artworkInstance.addControlTokenLevers(CONTROL_TOKEN_ID, leverIds, minValues, maxValues, startValues);
 
   // await artworkInstance.mintControlTokenTo("0x2c175DC859442E84914C6c7fFd3c06819c91bb55", 3, -10, 10, 5, "c")
 
-  var controlToken = await artworkInstance.controlTokenMapping(1)
+  var controlToken = await artworkInstance.controlTokenMapping(CONTROL_TOKEN_ID)
   
   // console.log(controlToken.numControlLevers.toString())
   // console.log(controlToken.expectedNumControlLevers.toString())
   // console.log(controlToken)
-  // // console.log(controlToken.minValue.toString())
+  // console.log(controlToken.minValue.toString())
   // // console.log(controlToken.maxValue.toString())
 
-  var controlLeverValue = await artworkInstance.getControlLeverValue(1, 0);
+  var controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 0);
   
-  console.log(controlLeverValue)
-  // // // use the control token
-  await artworkInstance.useControlToken(1, 0, 5);
+  console.log(controlLeverValue.toString())
+  // // // // use the control token
+  // await artworkInstance.useControlToken(1, 0, 5);
 
-  controlLeverValue = await artworkInstance.getControlLeverValue(1, 0);
+  controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 1);
   
-  console.log(controlLeverValue)
+  console.log(controlLeverValue.toString())
 };
 
 
