@@ -77,17 +77,21 @@ contract AsyncArtwork is ERC721Full {
 		bool exists;
 	}
 
+    // map control token id to a control token struct
 	mapping (uint256 => ControlToken) public controlTokenMapping;
-    uint256[] public controlTokenIds;
-	
-	mapping (uint256 => uint256) public buyPrices;
-	
+    // array of all the control token ids (excluding owner token)
+    uint256[] public controlTokenIds;	
+    // map control token ID to its buy price
+	mapping (uint256 => uint256) public buyPrices;	
+    // map a control token ID to its highest bid
 	mapping (uint256 => PendingBid) public highestBids;
+    // map a control token ID to its second highest bid
 	mapping (uint256 => PendingBid) public secondHighestBids;
-
+    // reserved constant for the owner token ID    
     uint256 private constant OWNER_TOKEN_ID = 0;
+    // the expected number of control tokens this art will have
 	uint256 private _expectedNumControlTokens;
-
+    // the current number of control tokens this art has
 	uint256 public numControlTokens;
 
 	constructor (string memory name, string memory symbol, uint256 expectedNumControlTokens) public 
