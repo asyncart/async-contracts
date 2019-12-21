@@ -17,7 +17,7 @@ module.exports = async function(deployer) {
   
   var minValues = [0, 0];
   var maxValues = [1000, 1000];
-  var startValues = [250, 500];
+  var startValues = [0, 0];
 
   await artworkInstance.addControlTokenLevers(CONTROL_TOKEN_ID, leverIds, minValues, maxValues, startValues);
 
@@ -34,12 +34,24 @@ module.exports = async function(deployer) {
   var controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 0);
   
   console.log(controlLeverValue.toString())
-  // // // // use the control token
-  // await artworkInstance.useControlToken(1, 0, 5);
 
   controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 1);
   
   console.log(controlLeverValue.toString())
+
+  // use the control token  
+  leverIds = [1, 0];
+  var newValues = [200, 75];
+  
+  await artworkInstance.useControlToken(CONTROL_TOKEN_ID, leverIds, newValues);
+
+  controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 1);
+  
+  console.log("after using control: " + controlLeverValue.toString())
+
+  controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 0);
+  
+  console.log("after using control: " + controlLeverValue.toString())
 };
 
 
