@@ -38,10 +38,12 @@ contract AsyncArtwork is ERC721Full {
     	address updater,
     	// the id of the token
     	uint256 tokenId,
-    	// the previous value that the token had before this update (for clients who want to animate the change)
-    	int256 previousValue,
+        // the ids of the levers that were updated
+        uint256[] leverIds,
+    	// the previous values that the levers had before this update (for clients who want to animate the change)
+    	int256[] previousValues,
     	// the new updated value
-    	int256 updatedValue
+    	int256[] updatedValues
 	);
 
     // struct for a token that controls part of the artwork
@@ -264,20 +266,34 @@ contract AsyncArtwork is ERC721Full {
 
     // Allows owner of a control token to update its value
     // TODO take an array of lever ids and their values?
-    function useControlToken(uint256 tokenId, uint256 leverId, int256 newValue) public isArtworkFinalized {
+    function useControlToken(uint256 tokenId, uint256[] memory leverIds, int256[] memory newValues) public isArtworkFinalized {
     	// check if sender is owner of token
     	require(ownerOf(tokenId) == msg.sender, "Control tokens only usuable by owners.");
-        // get the control lever
-        ControlLever storage lever = controlTokenMapping[tokenId].levers[leverId];
-    	// Enforce that the new value is valid        
-    	require((newValue >= lever.minValue) && (newValue <= lever.maxValue), "Invalid value.");
-    	// Enforce that the new value is different
-    	require(newValue != lever.currentValue, "Must provide different value.");
-    	// grab previous value for the event emit
-    	int256 previousValue = lever.currentValue;
-    	// Update token current value
-    	controlTokenMapping[tokenId].levers[leverId] = ControlLever(lever.minValue, lever.maxValue, newValue, true);
+
+        // collect the previous lever values for the event emit below
+        int256[] memory previousValues = new int256[](newValues.length);
+
+        for (uint i = 0; i < leverIds.length; i++) {
+            // get the control lever
+            ControlLever storage lever = controlTokenMapping[tokenId].levers[leverIds[i]];
+
+            // Enforce that the new value is valid        
+            require((newValues[i] >= lever.minValue) && (newValues[i] <= lever.maxValue), "Invalid value.");
+
+            // Enforce that the new value is different
+            require(newValues[i] != lever.currentValue, "Must provide different value.");
+
+            // grab previous value for the event emit
+            int256 previousValue = lever.currentValue;
+            
+            // Update token current value
+            lever.currentValue = newValues[i];
+
+            // collect the previous lever values for the event emit below
+            previousValues[i] = previousValue;
+        }
+        
     	// emit event
-    	emit ControlLeverUpdated(msg.sender, tokenId, previousValue, newValue);
+    	emit ControlLeverUpdated(msg.sender, tokenId, leverIds, previousValues, newValues);
     }
 }
