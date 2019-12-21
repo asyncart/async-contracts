@@ -1,57 +1,73 @@
 const AsyncArtwork = artifacts.require("./AsyncArtwork.sol");
 
+const OWNER_ADDRESS = "0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05"
+
+async function DeployArt(deployer, title, symbol, numControlTokens) {
+  await deployer.deploy(AsyncArtwork, "\"" + title + "\"", symbol, numControlTokens)
+
+  var artInstance = await AsyncArtwork.deployed();
+
+  console.log(await artInstance.name())
+  console.log(await artInstance.symbol()) 
+
+  await artInstance.mintOwnerTokenTo(OWNER_ADDRESS, "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa") 
+
+  return artInstance;
+}
+
 module.exports = async function(deployer) {
-  await deployer.deploy(AsyncArtwork, "\"Bees of Tomorrow\"", "ASYNC-BEES", 1)
-
-  let artworkInstance = await AsyncArtwork.deployed()
-
-  console.log(await artworkInstance.name())
-  console.log(await artworkInstance.symbol())  
-
-  await artworkInstance.mintOwnerTokenTo("0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05", "a")  
-
-  var leverIds = [0, 1];
   var CONTROL_TOKEN_ID = 1;
 
-  await artworkInstance.mintControlTokenTo("0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05", CONTROL_TOKEN_ID, leverIds.length, "b")
-  
-  var minValues = [0, 0];
-  var maxValues = [1000, 1000];
-  var startValues = [0, 0];
+  // var title = "Bees of Tomorrow";
+  // var symbol = "ASYNC-BEES"
+  // var leverIds = [0];
+  // var numControlTokens = 1;
 
+  var title = "Hubris";
+  var symbol = "ASYNC-HUBRIS";
+  var leverIds = [0];
+  var numControlTokens = 1;
+
+  var minValues = [0];
+  var maxValues = [1];
+  var startValues = [0];
+
+  // await DeployArt(deployer, "Bees of Tomorrow", "ASYNC-BEES", 1);
+  var artworkInstance = await DeployArt(deployer, title, symbol, numControlTokens);
+
+  
+  await artworkInstance.mintControlTokenTo(OWNER_ADDRESS, CONTROL_TOKEN_ID, leverIds.length, "QmZ5QMF88zPKKLoe6t35itphECVE6cZTARmUzt69RrpGdr");
   await artworkInstance.addControlTokenLevers(CONTROL_TOKEN_ID, leverIds, minValues, maxValues, startValues);
 
-  // await artworkInstance.mintControlTokenTo("0x2c175DC859442E84914C6c7fFd3c06819c91bb55", 3, -10, 10, 5, "c")
-
-  var controlToken = await artworkInstance.controlTokenMapping(CONTROL_TOKEN_ID)
+  // var controlToken = await artworkInstance.controlTokenMapping(CONTROL_TOKEN_ID)
   
-  // console.log(controlToken.numControlLevers.toString())
-  // console.log(controlToken.expectedNumControlLevers.toString())
-  // console.log(controlToken)
-  // console.log(controlToken.minValue.toString())
-  // // console.log(controlToken.maxValue.toString())
+  // // console.log(controlToken.numControlLevers.toString())
+  // // console.log(controlToken.expectedNumControlLevers.toString())
+  // // console.log(controlToken)
+  // // console.log(controlToken.minValue.toString())
+  // // // console.log(controlToken.maxValue.toString())
 
-  var controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 0);
+  // var controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 0);
   
-  console.log(controlLeverValue.toString())
+  // console.log(controlLeverValue.toString())
 
-  controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 1);
+  // controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 1);
   
-  console.log(controlLeverValue.toString())
+  // console.log(controlLeverValue.toString())
 
-  // use the control token  
-  leverIds = [1, 0];
-  var newValues = [200, 75];
+  // // use the control token  
+  // leverIds = [1, 0];
+  // var newValues = [200, 75];
   
-  await artworkInstance.useControlToken(CONTROL_TOKEN_ID, leverIds, newValues);
+  // await artworkInstance.useControlToken(CONTROL_TOKEN_ID, leverIds, newValues);
 
-  controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 1);
+  // controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 1);
   
-  console.log("after using control: " + controlLeverValue.toString())
+  // console.log("after using control: " + controlLeverValue.toString())
 
-  controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 0);
+  // controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 0);
   
-  console.log("after using control: " + controlLeverValue.toString())
+  // console.log("after using control: " + controlLeverValue.toString())
 };
 
 
