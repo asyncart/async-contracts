@@ -268,8 +268,17 @@ contract AsyncArtwork is ERC721Full {
         return controlTokenMapping[tokenId].levers[leverId].currentValue;
     }
 
-    // Allows owner of a control token to update its value
-    // TODO take an array of lever ids and their values?
+    // used for token owners to know the range of values they can use for a control lever.
+    function getControlLeverMinMax(uint256 tokenId, uint256 leverId) public view isArtworkFinalized returns (int256[] memory) {
+        int256[] memory minMax = new int256[](2);
+
+        minMax[0] = controlTokenMapping[tokenId].levers[leverId].minValue;
+        minMax[1] = controlTokenMapping[tokenId].levers[leverId].maxValue;
+
+        return minMax;
+    }
+
+    // Allows owner of a control token to update its lever values
     function useControlToken(uint256 tokenId, uint256[] memory leverIds, int256[] memory newValues) public isArtworkFinalized {
     	// check if sender is owner of token
     	require(ownerOf(tokenId) == msg.sender, "Control tokens only usuable by owners.");
