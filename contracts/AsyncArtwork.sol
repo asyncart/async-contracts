@@ -83,6 +83,9 @@ contract AsyncArtwork is ERC721Full {
     // map a control token id to a control token struct
     mapping (uint256 => ControlToken) public controlTokenIdMapping;
 
+    // map an artwork token id to the artist address (for royalties)
+    mapping (uint256 => address) public artistAddressMapping;
+
     // map control token ID to its buy price
 	mapping (uint256 => uint256) public buyPrices;	
     // map a control token ID to its highest bid
@@ -146,6 +149,9 @@ contract AsyncArtwork is ERC721Full {
         // track the number of control tokens that each artwork contains
         numControlTokensMapping[artworkTokenId] = newControlTokenURIEndIndices.length;
 
+        // track the msg.sender address as the artist address for future royalties
+        artistAddressMapping[artworkTokenId] = msg.sender;
+
         uint256 controlTokenLeverIndex = 0;
 
         // iterate through all control token URIs (1 for each control token)
@@ -153,6 +159,9 @@ contract AsyncArtwork is ERC721Full {
             uint256 controlTokenId = totalSupply();
             // increment the number of tokens that have been minted
             numTotalTokens = numTotalTokens.add(1);
+
+            // track the msg.sender address as the artist address for future royalties
+            artistAddressMapping[controlTokenId] = msg.sender;
 
             // mint the control token
             super._safeMint(to, controlTokenId);
