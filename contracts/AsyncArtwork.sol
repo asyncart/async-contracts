@@ -86,6 +86,9 @@ contract AsyncArtwork is ERC721Full {
     // map a control token ID to its highest bid
 	mapping (uint256 => PendingBid) public highestBids;
 
+    // The amount of artwork + control tokens that have been minted
+    uint256 private numTotalTokens;
+
 	constructor (string memory name, string memory symbol) public 
   		ERC721Full(name, symbol) {
   	}
@@ -95,6 +98,12 @@ contract AsyncArtwork is ERC721Full {
         _;
     }
 
+    // Return the total supply of tokens that have been minted (including artwork + control tokens)
+    function totalSupply() public view returns (uint256) {
+        return numTotalTokens;
+    }
+
+    // utility function to get a substring with a given start + end index
     function substring(string memory str, uint startIndex, uint endIndex) internal pure returns (string memory) {
         bytes memory strBytes = bytes(str);
         bytes memory result = new bytes(endIndex-startIndex);
@@ -104,11 +113,10 @@ contract AsyncArtwork is ERC721Full {
         return string(result);
     }
   	
-  	// Mint a piece of artwork   
-    function mintArtwork(address to, uint256 artworkTokenId, string memory artworkTokenURI, 
-        uint256[] memory newControlTokenIds,
-        uint256[] memory newControlTokenURIEndIndices,
+  	// Mint a piece of artwork. msg.sender must be a whitelisted artist and have a positive mint balance 
+    function mintArtwork(address to, string memory artworkTokenURI, 
         string memory newControlTokenURIs,
+        uint256[] memory newControlTokenURIEndIndices,        
         uint256[] memory numLeversPerControlToken,
         uint256[] memory leverIds,
         int256[] memory minValues, 
@@ -120,28 +128,35 @@ contract AsyncArtwork is ERC721Full {
         // enforce that the length of all the array lengths are equal
         require((leverIds.length == minValues.length) && (minValues.length == maxValues.length) && (maxValues.length == startValues.length),
             "LeverIds, MinValues, MaxValues, and StartValues arrays must be same length.");
-        // enforce that URI end indices is same length as as control token ids (must be 1 URI for each control token)
-        require(newControlTokenURIEndIndices.length == newControlTokenIds.length, 
-            "newControlTokenIds and newControlTokenURIEndIndices must be same length.");
+        // enforce that URI end indices is same length as levers per control token array (must be 1 URI for each control token)
+        require(newControlTokenURIEndIndices.length == numLeversPerControlToken.length, 
+            "newControlTokenURIEndIndices and numLeversPerControlToken must be same length.");
+
+        // generate a new token ID from the current supply amount
+        uint256 artworkTokenId = totalSupply();
+        // increment the number of tokens that have been minted
+        numTotalTokens = numTotalTokens.add(1);
 
         // Mint the token that represents ownership of the entire artwork    
         super._safeMint(to, artworkTokenId);
         super._setTokenURI(artworkTokenId, artworkTokenURI);
 
         uint256 controlTokenLeverIndex = 0;
-        uint256 controlTokenURIIndex = 0;
 
-        // iterate through all control token ids
-        for (uint256 i = 0; i < newControlTokenIds.length; i++) {
-            uint256 controlTokenId = newControlTokenIds[i];
+        // iterate through all control token URIs (1 for each control token)
+        for (uint256 i = 0; i < numLeversPerControlToken.length; i++) {
+            uint256 controlTokenId = totalSupply();
+            // increment the number of tokens that have been minted
+            numTotalTokens = numTotalTokens.add(1);
 
             // mint the control token
             super._safeMint(to, controlTokenId);
             // set the URI
-            super._setTokenURI(controlTokenId, substring(newControlTokenURIs, controlTokenURIIndex, newControlTokenURIEndIndices[i]));
-
-            // move control token URI to the last used end index
-            controlTokenURIIndex = newControlTokenURIEndIndices[i];
+            if (i > 0) {
+                super._setTokenURI(controlTokenId, substring(newControlTokenURIs, newControlTokenURIEndIndices[i - 1], newControlTokenURIEndIndices[i]));
+            } else {
+                super._setTokenURI(controlTokenId, substring(newControlTokenURIs, 0, newControlTokenURIEndIndices[i]));
+            }
 
             // create the control token
             controlTokenMapping[controlTokenId] = ControlToken(numLeversPerControlToken[i]);
