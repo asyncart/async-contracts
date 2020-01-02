@@ -2,42 +2,55 @@ const AsyncArtwork = artifacts.require("./AsyncArtwork.sol");
 
 const OWNER_ADDRESS = "0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05"
 
-async function DeployArt(deployer, title, symbol, numControlTokens) {
-  await deployer.deploy(AsyncArtwork, "\"" + title + "\"", symbol, numControlTokens)
+async function DeployArtwork(deployer, artworkTokenId, artworkTokenURI, title, symbol, controlTokenIds, controlTokenURIEndIndices, 
+  controlTokenURIs, numLeversPerControlToken, leverIds, minValues, maxValues, startValues) {
+
+  await deployer.deploy(AsyncArtwork, "\"" + title + "\"", symbol)
 
   var artInstance = await AsyncArtwork.deployed();
 
   console.log(await artInstance.name())
   console.log(await artInstance.symbol()) 
 
-  await artInstance.mintOwnerTokenTo(OWNER_ADDRESS, "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa") 
+  // await artInstance.mintOwnerTokenTo(OWNER_ADDRESS, "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa") 
+  await artInstance.mintArtwork(OWNER_ADDRESS, artworkTokenId, artworkTokenURI,
+    controlTokenIds, controlTokenURIEndIndices, controlTokenURIs, numLeversPerControlToken, 
+    leverIds, minValues, maxValues, startValues);
+
+  console.log((await artInstance.balanceOf(OWNER_ADDRESS)).toString())
+
+  console.log(await artInstance.tokenURI(artworkTokenId));
+  for (var i = 0; i < controlTokenIds.length; i++) {
+    
+    console.log("Control Token: " + controlTokenIds[i])
+
+    console.log(await artInstance.tokenURI(controlTokenIds[i]));
+  }  
 
   return artInstance;
 }
 
 module.exports = async function(deployer) {
-  var CONTROL_TOKEN_ID = 1;
-
-  // var title = "Bees of Tomorrow";
-  // var symbol = "ASYNC-BEES"
-  // var leverIds = [0];
-  // var numControlTokens = 1;
-
   var title = "Hubris";
   var symbol = "ASYNC-HUBRIS";
-  var leverIds = [0];
-  var numControlTokens = 1;
-
-  var minValues = [0];
-  var maxValues = [1];
-  var startValues = [0];
-
-  // await DeployArt(deployer, "Bees of Tomorrow", "ASYNC-BEES", 1);
-  var artworkInstance = await DeployArt(deployer, title, symbol, numControlTokens);
-
+  var controlTokenIds = [1, 2];
   
-  await artworkInstance.mintControlTokenTo(OWNER_ADDRESS, CONTROL_TOKEN_ID, leverIds.length, "QmZ5QMF88zPKKLoe6t35itphECVE6cZTARmUzt69RrpGdr");
-  await artworkInstance.addControlTokenLevers(CONTROL_TOKEN_ID, leverIds, minValues, maxValues, startValues);
+  var controlTokenURIEndIndices = [3, 7];
+  var controlTokenURIs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; // ABCDEFGHIJ
+  
+  var numLeversPerControlToken = [1, 1];
+  var leverIds = [0, 0];
+  var minValues = [0, 0];
+  var maxValues = [1, 2];
+  var startValues = [0, 0];
+  
+  var artworkInstance = await DeployArtwork(deployer, 0, "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa", 
+      title, symbol, controlTokenIds, controlTokenURIEndIndices,
+      controlTokenURIs, numLeversPerControlToken, leverIds, minValues, maxValues, startValues);
+
+  console.log("Done")
+  // await artworkInstance.mintControlTokenTo(OWNER_ADDRESS, CONTROL_TOKEN_ID, leverIds.length, "QmZ5QMF88zPKKLoe6t35itphECVE6cZTARmUzt69RrpGdr");
+  // await artworkInstance.addControlTokenLevers(CONTROL_TOKEN_ID, leverIds, minValues, maxValues, startValues);
 
   // var controlToken = await artworkInstance.controlTokenMapping(CONTROL_TOKEN_ID)
   

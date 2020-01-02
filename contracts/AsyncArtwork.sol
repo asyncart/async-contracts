@@ -1,5 +1,4 @@
 pragma solidity ^0.5.12;
-pragma experimental ABIEncoderV2;
 
 import "../node_modules/openzeppelin-solidity/contracts/token/ERC721/ERC721Full.sol";
 
@@ -86,8 +85,6 @@ contract AsyncArtwork is ERC721Full {
 	mapping (uint256 => uint256) public buyPrices;	
     // map a control token ID to its highest bid
 	mapping (uint256 => PendingBid) public highestBids;
-    // map a control token ID to its second highest bid
-	mapping (uint256 => PendingBid) public secondHighestBids;    
 
 	constructor (string memory name, string memory symbol) public 
   		ERC721Full(name, symbol) {
@@ -110,12 +107,10 @@ contract AsyncArtwork is ERC721Full {
   	// Mint a piece of artwork   
     function mintArtwork(address to, uint256 artworkTokenId, string memory artworkTokenURI, 
         uint256[] memory newControlTokenIds,
-        string[] memory newControlTokenURIs,
-
+        uint256[] memory newControlTokenURIEndIndices,
+        string memory newControlTokenURIs,
         uint256[] memory numLeversPerControlToken,
-
         uint256[] memory leverIds,
-
         int256[] memory minValues, 
         int256[] memory maxValues,
         int256[] memory startValues
@@ -125,12 +120,16 @@ contract AsyncArtwork is ERC721Full {
         // enforce that the length of all the array lengths are equal
         require((leverIds.length == minValues.length) && (minValues.length == maxValues.length) && (maxValues.length == startValues.length),
             "LeverIds, MinValues, MaxValues, and StartValues arrays must be same length.");
+        // enforce that URI end indices is same length as as control token ids (must be 1 URI for each control token)
+        require(newControlTokenURIEndIndices.length == newControlTokenIds.length, 
+            "newControlTokenIds and newControlTokenURIEndIndices must be same length.");
 
         // Mint the token that represents ownership of the entire artwork    
         super._safeMint(to, artworkTokenId);
         super._setTokenURI(artworkTokenId, artworkTokenURI);
 
         uint256 controlTokenLeverIndex = 0;
+        uint256 controlTokenURIIndex = 0;
 
         // iterate through all control token ids
         for (uint256 i = 0; i < newControlTokenIds.length; i++) {
@@ -139,19 +138,19 @@ contract AsyncArtwork is ERC721Full {
             // mint the control token
             super._safeMint(to, controlTokenId);
             // set the URI
-            super._setTokenURI(controlTokenId, newControlTokenURIs[i]);
+            super._setTokenURI(controlTokenId, substring(newControlTokenURIs, controlTokenURIIndex, newControlTokenURIEndIndices[i]));
 
-            // Get the number of control levers that this control token as
-            uint256 numControlLevers = numLeversPerControlToken[i];
+            // move control token URI to the last used end index
+            controlTokenURIIndex = newControlTokenURIEndIndices[i];
 
             // create the control token
-            controlTokenMapping[controlTokenId] = ControlToken(numControlLevers);
+            controlTokenMapping[controlTokenId] = ControlToken(numLeversPerControlToken[i]);
 
             // track the control ids mapped to each artwork token id
             artworkControlTokensMapping[artworkTokenId].push(controlTokenId);
 
             // create the control token levers now
-            for (uint256 k = 0; k < numControlLevers; k++) {
+            for (uint256 k = 0; k < numLeversPerControlToken[i]; k++) {
                 // enforce that maxValue is greater than or equal to minValue
                 require (maxValues[controlTokenLeverIndex] >= minValues[controlTokenLeverIndex], "Max value must be greater than or equal to min value.");
                 // enforce that currentValue is valid
@@ -175,14 +174,9 @@ contract AsyncArtwork is ERC721Full {
     	if (highestBids[tokenId].exists) {
     		// enforce that this bid is higher (TODO require a specific amount for increments?)
     		require(msg.value > highestBids[tokenId].amount, "Bid must be higher than previous bid amount.");
-    		
-    		// return current second highest bidder amount back
-    		if (secondHighestBids[tokenId].exists) {    			
-    			secondHighestBids[tokenId].bidder.transfer(secondHighestBids[tokenId].amount);
-    		}
 
-    		// convert current highest bid to second highest bid
-    		secondHighestBids[tokenId] = highestBids[tokenId];
+            // Return bid amount back to bidder
+            highestBids[tokenId].bidder.transfer(highestBids[tokenId].amount);
     	}
 
     	// set the new highest bid
@@ -194,24 +188,14 @@ contract AsyncArtwork is ERC721Full {
 
     // allows an address with a pending bid to withdraw it
     function withdrawBid(uint256 tokenId) public {
-    	// Return bid amount back to owner
-    	if ((highestBids[tokenId].exists) && (highestBids[tokenId].bidder == msg.sender)) {
-    		// second highest bid now becomes the highest
-			highestBids[tokenId] = secondHighestBids[tokenId];
-
-			// If this was highest bid, then boost second highest bid up to first 	
-			if (secondHighestBids[tokenId].exists) {
-				// clear the second highest bid
-				secondHighestBids[tokenId] = PendingBid(address(0), 0, false);
-			}
-
-    		// only emit an event when the highest bid is withdrawn
-    		emit BidWithdrawn(msg.sender, tokenId);
-    	} else if ((secondHighestBids[tokenId].exists) && (secondHighestBids[tokenId].bidder == msg.sender)) {
-    		secondHighestBids[tokenId] = PendingBid(address(0), 0, false);
-    	} else {
-    		revert("No bid to withdraw.");
-    	}
+        // check that there is a bid from the sender to withdraw
+        require (((highestBids[tokenId].exists) && (highestBids[tokenId].bidder == msg.sender)), "No bid from msg.sender to withdraw.");
+    	// Return bid amount back to bidder
+        highestBids[tokenId].bidder.transfer(highestBids[tokenId].amount);
+		// clear highest bid
+		highestBids[tokenId] = PendingBid(address(0), 0, false);			
+		// emit an event when the highest bid is withdrawn
+		emit BidWithdrawn(msg.sender, tokenId);
     }
 
     // Buy the artwork for the currently set price
@@ -220,7 +204,6 @@ contract AsyncArtwork is ERC721Full {
     	// check if sender is owner of token
     	require(ownerOf(tokenId) != msg.sender, "Owners can't rebuy their own token.");
     	// Return all highest bidder's money
-    	// Return all second highest bidder money
     	// Distribute percentage back to Artist(s) + Platform
     	// Transfer token
     	// Emit event
