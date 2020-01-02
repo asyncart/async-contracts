@@ -1,4 +1,5 @@
 pragma solidity ^0.5.12;
+pragma experimental ABIEncoderV2;
 
 import "../node_modules/openzeppelin-solidity/contracts/token/ERC721/ERC721Full.sol";
 
@@ -50,12 +51,11 @@ contract AsyncArtwork is ERC721Full {
     struct ControlToken {
         // the levers that this control token can use
         mapping (uint256 => ControlLever) levers;
-        // the expected number of levers this control token will have
-        uint256 expectedNumControlLevers;        
         // number that tracks how many levers there are
         uint256 numControlLevers;
     }
 
+    // struct for a lever on a control token that can be changed
     struct ControlLever {
         // // The minimum value this token can have (inclusive)
         int256 minValue;
@@ -79,105 +79,95 @@ contract AsyncArtwork is ERC721Full {
 
     // map control token id to a control token struct
 	mapping (uint256 => ControlToken) public controlTokenMapping;
-    // array of all the control token ids (excluding owner token)
-    uint256[] public controlTokenIds;	
+    // map an artwork token id to an array of control token ids
+    mapping (uint256 => uint256[]) public artworkControlTokensMapping;
+
     // map control token ID to its buy price
 	mapping (uint256 => uint256) public buyPrices;	
     // map a control token ID to its highest bid
 	mapping (uint256 => PendingBid) public highestBids;
     // map a control token ID to its second highest bid
-	mapping (uint256 => PendingBid) public secondHighestBids;
-    // reserved constant for the owner token ID    
-    uint256 private constant OWNER_TOKEN_ID = 0;
-    // the expected number of control tokens this art will have
-	uint256 private _expectedNumControlTokens;
-    // the current number of control tokens this art has
-	uint256 public numControlTokens;
+	mapping (uint256 => PendingBid) public secondHighestBids;    
 
-	constructor (string memory name, string memory symbol, uint256 expectedNumControlTokens) public 
-  		ERC721Full(name, symbol) {	
-
-  		_expectedNumControlTokens = expectedNumControlTokens;
+	constructor (string memory name, string memory symbol) public 
+  		ERC721Full(name, symbol) {
   	}
-  	
-  	// Mint the token that represents ownership of the entire artwork
-    function mintOwnerTokenTo(address to, string memory tokenURI) public {
-        super._safeMint(to, OWNER_TOKEN_ID);
-        super._setTokenURI(OWNER_TOKEN_ID, tokenURI);
-    }
 
-    // Mint a control token with certain limitations as to what it can control
-    function mintControlTokenTo(
-        address to,
-        uint256 tokenId,    
-        uint256 expectedNumControlLevers,    
-        string memory tokenURI
-    ) public {       	
-       	// enforce that we haven't minted more than the number of allowed control tokens
-    	require(numControlTokens < _expectedNumControlTokens, "Max number of control tokens minted.");
-    	// enforce that tokenId isn't the control token id
-    	require(tokenId != OWNER_TOKEN_ID, "Token ID reserved for owner token id.");
-    	// mint the token
-        super._safeMint(to, tokenId);
-        // set the URI
-        super._setTokenURI(tokenId, tokenURI);
-        // create the control token
-        controlTokenMapping[tokenId] = ControlToken(expectedNumControlLevers, 0);
-        // track an array of our token ids
-        controlTokenIds.push(tokenId);
-        // increase control token counter
-        numControlTokens++;
-    }
-
-    // modifier to ensure that an artwork has minted all its tokens and is finalized for use
-    modifier isArtworkFinalized() {
-        require (numControlTokens == _expectedNumControlTokens, "All control tokens must be minted first.");
-
-        for (uint i = 0; i < numControlTokens; i++) {
-            uint256 tokenId = controlTokenIds[i];
-
-            require (controlTokenMapping[tokenId].numControlLevers == controlTokenMapping[tokenId].expectedNumControlLevers, "All control tokens must have their expected levers set up.");
-        }
-        
+    modifier onlyWhitelistedArtist() {
+        // TODO check for whitelisted creator address
         _;
     }
 
-    // add control lever(s) to a control token
-    function addControlTokenLevers(uint256 tokenId, uint256[] memory leverIds, int256[] memory minValues, int256[] memory maxValues,
-            int256[] memory startValues) public {
+    function substring(string memory str, uint startIndex, uint endIndex) internal pure returns (string memory) {
+        bytes memory strBytes = bytes(str);
+        bytes memory result = new bytes(endIndex-startIndex);
+        for(uint i = startIndex; i < endIndex; i++) {
+            result[i-startIndex] = strBytes[i];
+        }
+        return string(result);
+    }
+  	
+  	// Mint a piece of artwork   
+    function mintArtwork(address to, uint256 artworkTokenId, string memory artworkTokenURI, 
+        uint256[] memory newControlTokenIds,
+        string[] memory newControlTokenURIs,
+
+        uint256[] memory numLeversPerControlToken,
+
+        uint256[] memory leverIds,
+
+        int256[] memory minValues, 
+        int256[] memory maxValues,
+        int256[] memory startValues
+    ) public onlyWhitelistedArtist {
         // enforce that at least 1 lever id is passed in
         require(leverIds.length > 0, "Must pass in at least 1 lever id.");
         // enforce that the length of all the array lengths are equal
         require((leverIds.length == minValues.length) && (minValues.length == maxValues.length) && (maxValues.length == startValues.length),
             "LeverIds, MinValues, MaxValues, and StartValues arrays must be same length.");
 
-        // // TODO require msg.sender is one of the initial artists
-        ControlToken storage controlToken = controlTokenMapping[tokenId];    
+        // Mint the token that represents ownership of the entire artwork    
+        super._safeMint(to, artworkTokenId);
+        super._setTokenURI(artworkTokenId, artworkTokenURI);
 
-        // for each array...
-        for (uint i = 0; i < leverIds.length; i++) {
-            // enforce that maxValue is greater than or equal to minValue
-            require (maxValues[i] >= minValues[i], "Max value must be greater than or equal to min value.");
+        uint256 controlTokenLeverIndex = 0;
 
-            // enforce that currentValue is valid
-            require((startValues[i] >= minValues[i]) && (startValues[i] <= maxValues[i]), "Invalid start value.");
+        // iterate through all control token ids
+        for (uint256 i = 0; i < newControlTokenIds.length; i++) {
+            uint256 controlTokenId = newControlTokenIds[i];
 
-            // ensure that there's still some room for levers to be added
-            require (controlToken.numControlLevers < controlToken.expectedNumControlLevers, "Control lever has already been added.");
+            // mint the control token
+            super._safeMint(to, controlTokenId);
+            // set the URI
+            super._setTokenURI(controlTokenId, newControlTokenURIs[i]);
 
-            // ensure that we're not trying to create the same lever twice
-            require(controlToken.levers[leverIds[i]].exists == false, "Control lever has already been added.");
+            // Get the number of control levers that this control token as
+            uint256 numControlLevers = numLeversPerControlToken[i];
 
-            // add the lever to this token
-            controlToken.levers[leverIds[i]] = ControlLever(minValues[i], maxValues[i], startValues[i], true);
+            // create the control token
+            controlTokenMapping[controlTokenId] = ControlToken(numControlLevers);
 
-            // update the number of control levers that have been created for this token
-            controlToken.numControlLevers++;
-        }        
+            // track the control ids mapped to each artwork token id
+            artworkControlTokensMapping[artworkTokenId].push(controlTokenId);
+
+            // create the control token levers now
+            for (uint256 k = 0; k < numControlLevers; k++) {
+                // enforce that maxValue is greater than or equal to minValue
+                require (maxValues[controlTokenLeverIndex] >= minValues[controlTokenLeverIndex], "Max value must be greater than or equal to min value.");
+                // enforce that currentValue is valid
+                require((startValues[controlTokenLeverIndex] >= minValues[controlTokenLeverIndex]) && 
+                    (startValues[controlTokenLeverIndex] <= maxValues[controlTokenLeverIndex]), "Invalid start value.");
+                // add the lever to this token
+                controlTokenMapping[controlTokenId].levers[k] = ControlLever(minValues[controlTokenLeverIndex],
+                    maxValues[controlTokenLeverIndex], startValues[controlTokenLeverIndex], true);
+                // increment the control token lever index
+                controlTokenLeverIndex++;
+            }
+        }
     }
 
     // Bidder functions
-    function bid(uint256 tokenId) public payable isArtworkFinalized {
+    function bid(uint256 tokenId) public payable {
     	// don't let owners bid on their own tokens
     	require(ownerOf(tokenId) != msg.sender, "Token owners can't bid on their own tokens.");
 
@@ -203,7 +193,7 @@ contract AsyncArtwork is ERC721Full {
     }
 
     // allows an address with a pending bid to withdraw it
-    function withdrawBid(uint256 tokenId) public isArtworkFinalized {
+    function withdrawBid(uint256 tokenId) public {
     	// Return bid amount back to owner
     	if ((highestBids[tokenId].exists) && (highestBids[tokenId].bidder == msg.sender)) {
     		// second highest bid now becomes the highest
@@ -225,7 +215,7 @@ contract AsyncArtwork is ERC721Full {
     }
 
     // Buy the artwork for the currently set price
-    function takeBuyPrice(uint256 tokenId) public payable isArtworkFinalized {
+    function takeBuyPrice(uint256 tokenId) public payable {
     	// TODO
     	// check if sender is owner of token
     	require(ownerOf(tokenId) != msg.sender, "Owners can't rebuy their own token.");
@@ -238,7 +228,7 @@ contract AsyncArtwork is ERC721Full {
 
     // Owner functions
     // Allow owner to accept the highest bid for a token
-    function acceptHighestBid(uint256 tokenId) public isArtworkFinalized {
+    function acceptHighestBid(uint256 tokenId) public {
     	// check if sender is owner of token
     	require(ownerOf(tokenId) == msg.sender, "Only token owners can accept bids.");
     	// check if there's a bid to accept
@@ -254,7 +244,7 @@ contract AsyncArtwork is ERC721Full {
     }
 
     // Allows owner of a control token to set an immediate buy price
-    function makeBuyPrice(uint256 tokenId, uint256 amount) public isArtworkFinalized {
+    function makeBuyPrice(uint256 tokenId, uint256 amount) public {
     	// check if sender is owner of token
     	require(ownerOf(tokenId) == msg.sender, "Only token owners can set buy price.");
     	// set the buy price
@@ -264,12 +254,12 @@ contract AsyncArtwork is ERC721Full {
     }
 
     // used during the render process to determine values
-    function getControlLeverValue(uint256 tokenId, uint256 leverId) public view isArtworkFinalized returns (int256) {
+    function getControlLeverValue(uint256 tokenId, uint256 leverId) public view returns (int256) {
         return controlTokenMapping[tokenId].levers[leverId].currentValue;
     }
 
     // used for token owners to know the range of values they can use for a control lever.
-    function getControlLeverMinMax(uint256 tokenId, uint256 leverId) public view isArtworkFinalized returns (int256[] memory) {
+    function getControlLeverMinMax(uint256 tokenId, uint256 leverId) public view returns (int256[] memory) {
         int256[] memory minMax = new int256[](2);
 
         minMax[0] = controlTokenMapping[tokenId].levers[leverId].minValue;
@@ -279,14 +269,14 @@ contract AsyncArtwork is ERC721Full {
     }
 
     // Allows owner of a control token to update its lever values
-    function useControlToken(uint256 tokenId, uint256[] memory leverIds, int256[] memory newValues) public isArtworkFinalized {
+    function useControlToken(uint256 tokenId, uint256[] memory leverIds, int256[] memory newValues) public {
     	// check if sender is owner of token
     	require(ownerOf(tokenId) == msg.sender, "Control tokens only usuable by owners.");
 
         // collect the previous lever values for the event emit below
         int256[] memory previousValues = new int256[](newValues.length);
 
-        for (uint i = 0; i < leverIds.length; i++) {
+        for (uint256 i = 0; i < leverIds.length; i++) {
             // get the control lever
             ControlLever storage lever = controlTokenMapping[tokenId].levers[leverIds[i]];
 
