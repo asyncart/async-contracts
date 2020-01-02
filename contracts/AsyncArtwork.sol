@@ -75,24 +75,26 @@ contract AsyncArtwork is ERC721Full {
 		// false by default, true once instantiated
 		bool exists;
 	}
-
-    // map control token id to a control token struct
-	mapping (uint256 => ControlToken) public controlTokenMapping;
-    // map an artwork token id to an array of control token ids
-    mapping (uint256 => uint256[]) public artworkControlTokensMapping;
+    
+    // map an artwork token id to the number of control tokens it contains
+    mapping (uint256 => uint256) public numControlTokensMapping;
+    // map an artwork token id to an array of its control token ids
+    mapping (uint256 => uint256[]) public artworkControlTokensMapping;    
+    // map a control token id to a control token struct
+    mapping (uint256 => ControlToken) public controlTokenIdMapping;
 
     // map control token ID to its buy price
 	mapping (uint256 => uint256) public buyPrices;	
     // map a control token ID to its highest bid
-	mapping (uint256 => PendingBid) public highestBids;
+	mapping (uint256 => PendingBid) public pendingBids;
 
     // The amount of artwork + control tokens that have been minted
     uint256 private numTotalTokens;
 
-	constructor (string memory name, string memory symbol) public 
-  		ERC721Full(name, symbol) {
+	constructor (string memory name, string memory symbol) public ERC721Full(name, symbol) {
   	}
 
+    // modifier to check if this artist is whitelisted and has a positive mint balance
     modifier onlyWhitelistedArtist() {
         // TODO check for whitelisted creator address
         _;
@@ -141,6 +143,9 @@ contract AsyncArtwork is ERC721Full {
         super._safeMint(to, artworkTokenId);
         super._setTokenURI(artworkTokenId, artworkTokenURI);
 
+        // track the number of control tokens that each artwork contains
+        numControlTokensMapping[artworkTokenId] = newControlTokenURIEndIndices.length;
+
         uint256 controlTokenLeverIndex = 0;
 
         // iterate through all control token URIs (1 for each control token)
@@ -159,7 +164,7 @@ contract AsyncArtwork is ERC721Full {
             }
 
             // create the control token
-            controlTokenMapping[controlTokenId] = ControlToken(numLeversPerControlToken[i]);
+            controlTokenIdMapping[controlTokenId] = ControlToken(numLeversPerControlToken[i]);
 
             // track the control ids mapped to each artwork token id
             artworkControlTokensMapping[artworkTokenId].push(controlTokenId);
@@ -172,7 +177,7 @@ contract AsyncArtwork is ERC721Full {
                 require((startValues[controlTokenLeverIndex] >= minValues[controlTokenLeverIndex]) && 
                     (startValues[controlTokenLeverIndex] <= maxValues[controlTokenLeverIndex]), "Invalid start value.");
                 // add the lever to this token
-                controlTokenMapping[controlTokenId].levers[k] = ControlLever(minValues[controlTokenLeverIndex],
+                controlTokenIdMapping[controlTokenId].levers[k] = ControlLever(minValues[controlTokenLeverIndex],
                     maxValues[controlTokenLeverIndex], startValues[controlTokenLeverIndex], true);
                 // increment the control token lever index
                 controlTokenLeverIndex++;
@@ -186,16 +191,16 @@ contract AsyncArtwork is ERC721Full {
     	require(ownerOf(tokenId) != msg.sender, "Token owners can't bid on their own tokens.");
 
     	// check if there's a highest bid
-    	if (highestBids[tokenId].exists) {
+    	if (pendingBids[tokenId].exists) {
     		// enforce that this bid is higher (TODO require a specific amount for increments?)
-    		require(msg.value > highestBids[tokenId].amount, "Bid must be higher than previous bid amount.");
+    		require(msg.value > pendingBids[tokenId].amount, "Bid must be higher than previous bid amount.");
 
             // Return bid amount back to bidder
-            highestBids[tokenId].bidder.transfer(highestBids[tokenId].amount);
+            pendingBids[tokenId].bidder.transfer(pendingBids[tokenId].amount);
     	}
 
     	// set the new highest bid
-    	highestBids[tokenId] = PendingBid(msg.sender, msg.value, true);
+    	pendingBids[tokenId] = PendingBid(msg.sender, msg.value, true);
 
     	// Emit event for the bid proposal
     	emit BidProposed(msg.sender, tokenId, msg.value);
@@ -204,11 +209,11 @@ contract AsyncArtwork is ERC721Full {
     // allows an address with a pending bid to withdraw it
     function withdrawBid(uint256 tokenId) public {
         // check that there is a bid from the sender to withdraw
-        require (((highestBids[tokenId].exists) && (highestBids[tokenId].bidder == msg.sender)), "No bid from msg.sender to withdraw.");
+        require (((pendingBids[tokenId].exists) && (pendingBids[tokenId].bidder == msg.sender)), "No bid from msg.sender to withdraw.");
     	// Return bid amount back to bidder
-        highestBids[tokenId].bidder.transfer(highestBids[tokenId].amount);
+        pendingBids[tokenId].bidder.transfer(pendingBids[tokenId].amount);
 		// clear highest bid
-		highestBids[tokenId] = PendingBid(address(0), 0, false);			
+		pendingBids[tokenId] = PendingBid(address(0), 0, false);			
 		// emit an event when the highest bid is withdrawn
 		emit BidWithdrawn(msg.sender, tokenId);
     }
@@ -230,7 +235,7 @@ contract AsyncArtwork is ERC721Full {
     	// check if sender is owner of token
     	require(ownerOf(tokenId) == msg.sender, "Only token owners can accept bids.");
     	// check if there's a bid to accept
-    	require (highestBids[tokenId].exists, "No pending bid to accept!");
+    	require (pendingBids[tokenId].exists, "No pending bid to accept!");
     	// TODO
     	// Take highest bidder money    	
     	// Return rest of second highest bidder's money
@@ -253,15 +258,15 @@ contract AsyncArtwork is ERC721Full {
 
     // used during the render process to determine values
     function getControlLeverValue(uint256 tokenId, uint256 leverId) public view returns (int256) {
-        return controlTokenMapping[tokenId].levers[leverId].currentValue;
+        return controlTokenIdMapping[tokenId].levers[leverId].currentValue;
     }
 
     // used for token owners to know the range of values they can use for a control lever.
     function getControlLeverMinMax(uint256 tokenId, uint256 leverId) public view returns (int256[] memory) {
         int256[] memory minMax = new int256[](2);
 
-        minMax[0] = controlTokenMapping[tokenId].levers[leverId].minValue;
-        minMax[1] = controlTokenMapping[tokenId].levers[leverId].maxValue;
+        minMax[0] = controlTokenIdMapping[tokenId].levers[leverId].minValue;
+        minMax[1] = controlTokenIdMapping[tokenId].levers[leverId].maxValue;
 
         return minMax;
     }
@@ -276,7 +281,7 @@ contract AsyncArtwork is ERC721Full {
 
         for (uint256 i = 0; i < leverIds.length; i++) {
             // get the control lever
-            ControlLever storage lever = controlTokenMapping[tokenId].levers[leverIds[i]];
+            ControlLever storage lever = controlTokenIdMapping[tokenId].levers[leverIds[i]];
 
             // Enforce that the new value is valid        
             require((newValues[i] >= lever.minValue) && (newValues[i] <= lever.maxValue), "Invalid value.");

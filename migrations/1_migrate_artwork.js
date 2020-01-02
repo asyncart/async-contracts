@@ -19,13 +19,16 @@ async function DeployArtwork(deployer, artworkTokenURI, title, symbol, controlTo
 
   console.log(await artInstance.tokenURI(0));
 
+  console.log("Artwork Token: " + 0 + " has: "+ (await artInstance.numControlTokensMapping(0)).toString() + " control token(s)");
+
   for (var i = 0; i < controlTokenURIEndIndices.length; i++) {    
     console.log("Control Token: " + (i + 1));
 
-    console.log(await artInstance.tokenURI((i + 1)));
+    console.log("    Token URI: " + (await artInstance.tokenURI((i + 1))));
+    
+    console.log("    MinMax: " + (await artInstance.getControlLeverMinMax(i + 1, 0)));
 
-    console.log(await artInstance.getControlLeverValue(i + 1, 0));
-    console.log(await artInstance.getControlLeverMinMax(i + 1, 0));
+    console.log("    Current Value: " + (await artInstance.getControlLeverValue(i + 1, 0)));
   }
 
   return artInstance;
@@ -35,9 +38,16 @@ module.exports = async function(deployer) {
   var title = "Hubris";
   var symbol = "ASYNC-HUBRIS";
   var artworkURI = "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa";
+    
+  var controlTokenURIs = ["QmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvC", "ZmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvC"];
   
-  var controlTokenURIEndIndices = [46, 92];
-  var controlTokenURIs = "QmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvCZmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvC"; // ABCDEFGHIJ
+  // generate the end indices
+  var controlTokenURIEndIndex = 0;
+  var controlTokenURIEndIndices = []; 
+  for (var i = 0; i < controlTokenURIs.length; i++) {
+    controlTokenURIEndIndex += controlTokenURIs[i].length;    
+    controlTokenURIEndIndices.push(controlTokenURIEndIndex)    
+  }
   
   var numLeversPerControlToken = [1, 1];
   var leverIds = [0, 0];
@@ -46,7 +56,8 @@ module.exports = async function(deployer) {
   var startValues = [0, 0];
   
   var artworkInstance = await DeployArtwork(deployer, "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa", 
-      title, symbol, controlTokenURIEndIndices, controlTokenURIs, numLeversPerControlToken, leverIds, minValues, maxValues, startValues);
+      title, symbol, controlTokenURIEndIndices, controlTokenURIs.join(""), 
+      numLeversPerControlToken, leverIds, minValues, maxValues, startValues);
 
   console.log("Done")
   // await artworkInstance.mintControlTokenTo(OWNER_ADDRESS, CONTROL_TOKEN_ID, leverIds.length, "QmZ5QMF88zPKKLoe6t35itphECVE6cZTARmUzt69RrpGdr");
