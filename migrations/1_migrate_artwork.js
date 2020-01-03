@@ -2,66 +2,67 @@ const AsyncArtwork = artifacts.require("./AsyncArtwork.sol");
 
 const OWNER_ADDRESS = "0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05"
 
-async function DeployArtwork(deployer, artworkTokenURI, title, symbol, controlTokenURIEndIndices, 
-  controlTokenURIs, numLeversPerControlToken, leverIds, minValues, maxValues, startValues) {
+// async function DeployArtwork(deployer, artworkTokenURI, title, symbol, controlTokenURIEndIndices, 
+//   controlTokenURIs, numLeversPerControlToken, leverIds, minValues, maxValues, startValues) {
 
-  await deployer.deploy(AsyncArtwork, "\"" + title + "\"", symbol)
 
-  var artInstance = await AsyncArtwork.deployed();
 
-  await artInstance.mintArtwork(OWNER_ADDRESS, artworkTokenURI, controlTokenURIs, controlTokenURIEndIndices, numLeversPerControlToken, 
-    leverIds, minValues, maxValues, startValues);
+//   var artInstance = await AsyncArtwork.deployed();
 
-  console.log("Platform First " + (await artInstance.platformFirstSaleRoyaltyPercentage()) + "%")
-  console.log("Platform Secondary " + (await artInstance.platformSecondaryRoyaltyPercentage()) + "%")
-  console.log("Artist Secondary " + (await artInstance.artistSecondaryRoyaltyPercentage()) + "%")
+//   await artInstance.mintArtwork(OWNER_ADDRESS, artworkTokenURI, controlTokenURIs, controlTokenURIEndIndices, numLeversPerControlToken, 
+//     leverIds, minValues, maxValues, startValues);
 
-  console.log(await artInstance.name())
-  console.log(await artInstance.symbol())
+//   console.log("Platform First " + (await artInstance.platformFirstSaleRoyaltyPercentage()) + "%")
+//   console.log("Platform Secondary " + (await artInstance.platformSecondaryRoyaltyPercentage()) + "%")
+//   console.log("Artist Secondary " + (await artInstance.artistSecondaryRoyaltyPercentage()) + "%")
+
+//   console.log(await artInstance.name())
+//   console.log(await artInstance.symbol())
   
-  console.log("balance of owner: " + (await artInstance.balanceOf(OWNER_ADDRESS)).toString())
+//   console.log("balance of owner: " + (await artInstance.balanceOf(OWNER_ADDRESS)).toString())
 
-  console.log("artwork URI: " + (await artInstance.tokenURI(0)));
+//   console.log("artwork URI: " + (await artInstance.tokenURI(0)));
 
-  console.log("Artwork Token: " + 0 + " has: "+ (await artInstance.numControlTokensMapping(0)).toString() + " control token(s)");
+//   console.log("Artwork Token: " + 0 + " has: "+ (await artInstance.numControlTokensMapping(0)).toString() + " control token(s)");
 
-  for (var i = 0; i < controlTokenURIEndIndices.length; i++) {    
-    console.log("Control Token: " + (i + 1));
+//   for (var i = 0; i < controlTokenURIEndIndices.length; i++) {    
+//     console.log("Control Token: " + (i + 1));
 
-    console.log("    Token URI: " + (await artInstance.tokenURI((i + 1))));
+//     console.log("    Token URI: " + (await artInstance.tokenURI((i + 1))));
     
-    console.log("    MinMax: " + (await artInstance.getControlLeverMinMax(i + 1, 0)));
+//     console.log("    MinMax: " + (await artInstance.getControlLeverMinMax(i + 1, 0)));
 
-    console.log("    Current Value: " + (await artInstance.getControlLeverValue(i + 1, 0)));
-  }
+//     console.log("    Current Value: " + (await artInstance.getControlLeverValue(i + 1, 0)));
+//   }
 
-  return artInstance;
-}
+//   return artInstance;
+// }
 
 module.exports = async function(deployer) {
   var title = "Hubris";
   var symbol = "ASYNC-HUBRIS";
-  var artworkURI = "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa";
+  // var artworkURI = "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa";
     
-  var controlTokenURIs = ["QmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvC", "ZmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvC"];
+  // var controlTokenURIs = ["QmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvC", "ZmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvC"];
 
-  // generate the end indices
-  var controlTokenURIEndIndex = 0;
-  var controlTokenURIEndIndices = []; 
-  for (var i = 0; i < controlTokenURIs.length; i++) {
-    controlTokenURIEndIndex += controlTokenURIs[i].length;    
-    controlTokenURIEndIndices.push(controlTokenURIEndIndex)    
-  }
+  // // generate the end indices
+  // var controlTokenURIEndIndex = 0;
+  // var controlTokenURIEndIndices = []; 
+  // for (var i = 0; i < controlTokenURIs.length; i++) {
+  //   controlTokenURIEndIndex += controlTokenURIs[i].length;    
+  //   controlTokenURIEndIndices.push(controlTokenURIEndIndex)    
+  // }
   
-  var numLeversPerControlToken = [1, 1];
-  var leverIds = [0, 0];
-  var minValues = [0, 0];
-  var maxValues = [1, 2];
-  var startValues = [0, 0];
+  // var numLeversPerControlToken = [1, 1];
+  // var leverIds = [0, 0];
+  // var minValues = [0, 0];
+  // var maxValues = [1, 2];
+  // var startValues = [0, 0];
   
-  var artworkInstance = await DeployArtwork(deployer, "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa", 
-      title, symbol, controlTokenURIEndIndices, controlTokenURIs.join(""), 
-      numLeversPerControlToken, leverIds, minValues, maxValues, startValues);
+  // var artworkInstance = await DeployArtwork(deployer, "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa", 
+  //     title, symbol, controlTokenURIEndIndices, controlTokenURIs.join(""), 
+  //     numLeversPerControlToken, leverIds, minValues, maxValues, startValues);
+  await deployer.deploy(AsyncArtwork, title, symbol)  
 
   console.log("Done")
   // await artworkInstance.mintControlTokenTo(OWNER_ADDRESS, CONTROL_TOKEN_ID, leverIds.length, "QmZ5QMF88zPKKLoe6t35itphECVE6cZTARmUzt69RrpGdr");
