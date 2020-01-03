@@ -19,9 +19,9 @@ async function DeployArtwork(deployer, artworkTokenURI, title, symbol, controlTo
   console.log(await artInstance.name())
   console.log(await artInstance.symbol())
   
-  console.log((await artInstance.balanceOf(OWNER_ADDRESS)).toString())
+  console.log("balance of owner: " + (await artInstance.balanceOf(OWNER_ADDRESS)).toString())
 
-  console.log(await artInstance.tokenURI(0));
+  console.log("artwork URI: " + (await artInstance.tokenURI(0)));
 
   console.log("Artwork Token: " + 0 + " has: "+ (await artInstance.numControlTokensMapping(0)).toString() + " control token(s)");
 

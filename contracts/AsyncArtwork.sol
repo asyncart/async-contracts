@@ -104,7 +104,16 @@ contract AsyncArtwork is ERC721Full {
     address payable private platformAddress;
 
 	constructor (string memory name, string memory symbol) public ERC721Full(name, symbol) {
+        // TODO add functions to set these
+        platformFirstSaleRoyaltyPercentage = 10;
+        platformSecondaryRoyaltyPercentage = 1;
+        artistSecondaryRoyaltyPercentage = 3;
   	}
+
+    modifier onlyPlatform() {
+        require(_msgSender() == platformAddress, "Only platform is allowed to perform this action.");
+        _;    
+    }
 
     // modifier to check if this artist is whitelisted and has a positive mint balance
     modifier onlyWhitelistedArtist() {
@@ -150,19 +159,15 @@ contract AsyncArtwork is ERC721Full {
         uint256 artworkTokenId = totalSupply();
         // increment the number of tokens that have been minted
         numTotalTokens = numTotalTokens.add(1);
-
         // Mint the token that represents ownership of the entire artwork    
         super._safeMint(to, artworkTokenId);
         super._setTokenURI(artworkTokenId, artworkTokenURI);
-
         // track the number of control tokens that each artwork contains
         numControlTokensMapping[artworkTokenId] = newControlTokenURIEndIndices.length;
-
         // track the msg.sender address as the artist address for future royalties
         artistAddressMapping[artworkTokenId] = msg.sender;
-
+        // index to track our control token lever values for min/max/start
         uint256 controlTokenLeverIndex = 0;
-
         // iterate through all control token URIs (1 for each control token)
         for (uint256 i = 0; i < numLeversPerControlToken.length; i++) {
             uint256 controlTokenId = totalSupply();
@@ -263,26 +268,30 @@ contract AsyncArtwork is ERC721Full {
 
         // the amount that the platform gets from this sale
         uint256 platformAmount = 0;
+
+        uint256 hundred = 100;
     	
         // if the first sale already happened, then give the artist + platform the secondary royalty percentage
         if (tokenDidHaveFirstSale[tokenId]) {
+            // mark down that this first sale occurred
             tokenDidHaveFirstSale[tokenId] = true;
-
-            // TODO
-            // give artist the secondary royalty
-            uint256 artistAmount = 0;
-
-            artistAddressMapping[tokenId].transfer(artistAmount);
+            // calculate the artist royalty
+            uint256 artistAmount = hundred.sub(artistSecondaryRoyaltyPercentage).mul(hundred).mul(paymentAmount);
+            // transfer the artist's royalty
+            artistAddressMapping[tokenId].transfer(artistAmount);            
+            // calculate the platform royalty
+            platformAmount = hundred.sub(platformSecondaryRoyaltyPercentage).mul(hundred).mul(paymentAmount);
             // deduct the artist amount from the payment amount
             paymentAmount = paymentAmount.sub(artistAmount);
         } else {
             // else if this is the first sale for the token, give the platform the first sale royalty percentage
+            platformAmount = hundred.sub(platformFirstSaleRoyaltyPercentage).mul(hundred).mul(paymentAmount);
         }
         // give platform its royalty
         platformAddress.transfer(platformAmount);
         // deduct the platform amount from the payment amount
         paymentAmount = paymentAmount.sub(platformAmount);
-
+        // cast the owner to a payable address
         address payable payableOwner = address(uint160(ownerOf(tokenId)));
         // transfer the remaining amount to the owner of the token
     	payableOwner.transfer(paymentAmount);
