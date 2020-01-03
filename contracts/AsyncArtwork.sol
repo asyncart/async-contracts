@@ -81,11 +81,11 @@ contract AsyncArtwork is ERC721Full {
     // map an artwork token id to the number of control tokens it contains
     mapping (uint256 => uint256) public numControlTokensMapping;
     // map an artwork token id to an array of its control token ids
-    mapping (uint256 => uint256[]) public artworkControlTokensMapping;    
+    mapping (uint256 => uint256[]) public artworkControlTokensMapping;
     // map a control token id to a control token struct
     mapping (uint256 => ControlToken) public controlTokenIdMapping;
     // map an artwork token id to the artist address (for royalties)
-    mapping (uint256 => address) public artistAddressMapping;
+    mapping (uint256 => address payable) public artistAddressMapping;
     // map control token ID to its buy price
 	mapping (uint256 => uint256) public buyPrices;	
     // map a control token ID to its highest bid
@@ -100,6 +100,8 @@ contract AsyncArtwork is ERC721Full {
     uint256 public artistSecondaryRoyaltyPercentage;
     // The amount of artwork + control tokens that have been minted
     uint256 private numTotalTokens;
+    // the address of the platform (for receving commissions and royalties)
+    address payable private platformAddress;
 
 	constructor (string memory name, string memory symbol) public ERC721Full(name, symbol) {
   	}
@@ -196,15 +198,15 @@ contract AsyncArtwork is ERC721Full {
                 controlTokenIdMapping[controlTokenId].levers[k] = ControlLever(minValues[controlTokenLeverIndex],
                     maxValues[controlTokenLeverIndex], startValues[controlTokenLeverIndex], true);
                 // increment the control token lever index
-                controlTokenLeverIndex++;
+                controlTokenLeverIndex = controlTokenLeverIndex.add(1);
             }
         }
     }
 
     // Bidder functions
     function bid(uint256 tokenId) public payable {
-    	// don't let owners bid on their own tokens
-    	require(ownerOf(tokenId) != msg.sender, "Token owners can't bid on their own tokens.");
+    	// don't let owners/approved bid on their own tokens
+        require(_isApprovedOrOwner(msg.sender, tokenId) == false, "Token owners/approved can't bid on their own tokens.");
 
     	// check if there's a highest bid
     	if (pendingBids[tokenId].exists) {
@@ -237,39 +239,69 @@ contract AsyncArtwork is ERC721Full {
     // Buy the artwork for the currently set price
     function takeBuyPrice(uint256 tokenId) public payable {
     	// TODO
-    	// check if sender is owner of token
-    	require(ownerOf(tokenId) != msg.sender, "Owners can't rebuy their own token.");
+        // don't let owners/approved buy on their own tokens
+        require(_isApprovedOrOwner(msg.sender, tokenId) == false, "Owners/approved can't buy their own token.");
     	// Return all highest bidder's money
     	// Distribute percentage back to Artist(s) + Platform
         // TODO check if this was first or secondary sale (tokenDidHaveFirstSale)
     	// Transfer token to msg.sender
+        // reset buy price
+        buyPrices[tokenId] = 0;
     	// Emit event
     }
 
     // Owner functions
     // Allow owner to accept the highest bid for a token
     function acceptHighestBid(uint256 tokenId) public {
-    	// check if sender is owner of token
-    	require(ownerOf(tokenId) == msg.sender, "Only token owners can accept bids.");
+    	// check if sender is owner/approved of token        
+        require(_isApprovedOrOwner(msg.sender, tokenId), "Only token owners/approved can accept bids.");
     	// check if there's a bid to accept
     	require (pendingBids[tokenId].exists, "No pending bid to accept!");
-    	// TODO
-    	// Take highest bidder money    	
-    	// Return rest of second highest bidder's money
-    	// Distribute percentage back to Artist(s) + Platform
 
-        // TODO check if this was first or secondary sale (tokenDidHaveFirstSale)
+        // get the pending bid amount
+        uint256 paymentAmount = pendingBids[tokenId].amount;
+
+        // the amount that the platform gets from this sale
+        uint256 platformAmount = 0;
     	
+        // if the first sale already happened, then give the artist + platform the secondary royalty percentage
+        if (tokenDidHaveFirstSale[tokenId]) {
+            tokenDidHaveFirstSale[tokenId] = true;
+
+            // TODO
+            // give artist the secondary royalty
+            uint256 artistAmount = 0;
+
+            artistAddressMapping[tokenId].transfer(artistAmount);
+            // deduct the artist amount from the payment amount
+            paymentAmount = paymentAmount.sub(artistAmount);
+        } else {
+            // else if this is the first sale for the token, give the platform the first sale royalty percentage
+        }
+        // give platform its royalty
+        platformAddress.transfer(platformAmount);
+        // deduct the platform amount from the payment amount
+        paymentAmount = paymentAmount.sub(platformAmount);
+
+        address payable payableOwner = address(uint160(ownerOf(tokenId)));
+        // transfer the remaining amount to the owner of the token
+    	payableOwner.transfer(paymentAmount);
+        // transfer the token to the bidder address
+        safeTransferFrom(ownerOf(tokenId), pendingBids[tokenId].bidder, tokenId);
+        // clear the approval for this token
+        approve(address(0), tokenId);
         // reset buy price
     	buyPrices[tokenId] = 0;
-    	// Transfer token
     	// Emit event
+        emit TokenSale(pendingBids[tokenId].bidder, tokenId, pendingBids[tokenId].amount);
+        // clear highest bid
+        pendingBids[tokenId] = PendingBid(address(0), 0, false);
     }
 
     // Allows owner of a control token to set an immediate buy price
     function makeBuyPrice(uint256 tokenId, uint256 amount) public {
-    	// check if sender is owner of token
-    	require(ownerOf(tokenId) == msg.sender, "Only token owners can set buy price.");
+    	// check if sender is owner/approved of token        
+    	require(_isApprovedOrOwner(msg.sender, tokenId), "Only token owner or approved can set buy price.");
     	// set the buy price
     	buyPrices[tokenId] = amount;
     	// emit event
@@ -293,8 +325,8 @@ contract AsyncArtwork is ERC721Full {
 
     // Allows owner of a control token to update its lever values
     function useControlToken(uint256 tokenId, uint256[] memory leverIds, int256[] memory newValues) public {
-    	// check if sender is owner of token
-    	require(ownerOf(tokenId) == msg.sender, "Control tokens only usuable by owners.");
+    	// check if sender is owner/approved of token        
+        require(_isApprovedOrOwner(msg.sender, tokenId), "Control tokens only usuable by owners/approved.");
 
         // collect the previous lever values for the event emit below
         int256[] memory previousValues = new int256[](newValues.length);
