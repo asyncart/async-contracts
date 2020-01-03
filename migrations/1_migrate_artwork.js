@@ -12,8 +12,12 @@ async function DeployArtwork(deployer, artworkTokenURI, title, symbol, controlTo
   await artInstance.mintArtwork(OWNER_ADDRESS, artworkTokenURI, controlTokenURIs, controlTokenURIEndIndices, numLeversPerControlToken, 
     leverIds, minValues, maxValues, startValues);
 
+  console.log("Platform First " + (await artInstance.platformFirstSaleRoyaltyPercentage()) + "%")
+  console.log("Platform Secondary " + (await artInstance.platformSecondaryRoyaltyPercentage()) + "%")
+  console.log("Artist Secondary " + (await artInstance.artistSecondaryRoyaltyPercentage()) + "%")
+
   console.log(await artInstance.name())
-  console.log(await artInstance.symbol()) 
+  console.log(await artInstance.symbol())
   
   console.log((await artInstance.balanceOf(OWNER_ADDRESS)).toString())
 
@@ -40,7 +44,7 @@ module.exports = async function(deployer) {
   var artworkURI = "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa";
     
   var controlTokenURIs = ["QmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvC", "ZmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvC"];
-  
+
   // generate the end indices
   var controlTokenURIEndIndex = 0;
   var controlTokenURIEndIndices = []; 

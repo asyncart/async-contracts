@@ -52,6 +52,8 @@ contract AsyncArtwork is ERC721Full {
         mapping (uint256 => ControlLever) levers;
         // number that tracks how many levers there are
         uint256 numControlLevers;
+        // false by default, true once instantiated
+        bool exists;
     }
 
     // struct for a lever on a control token that can be changed
@@ -82,15 +84,20 @@ contract AsyncArtwork is ERC721Full {
     mapping (uint256 => uint256[]) public artworkControlTokensMapping;    
     // map a control token id to a control token struct
     mapping (uint256 => ControlToken) public controlTokenIdMapping;
-
     // map an artwork token id to the artist address (for royalties)
     mapping (uint256 => address) public artistAddressMapping;
-
     // map control token ID to its buy price
 	mapping (uint256 => uint256) public buyPrices;	
     // map a control token ID to its highest bid
 	mapping (uint256 => PendingBid) public pendingBids;
-
+    // track whether this token was sold the first time or not (used for determining whether to use first or secondary sale percentage)
+    mapping (uint256 => bool) tokenDidHaveFirstSale;    
+    // the percentage of sale that the platform gets on first sales
+    uint256 public platformFirstSaleRoyaltyPercentage;
+    // the percentage of sale that the platform gets on secondary sales
+    uint256 public platformSecondaryRoyaltyPercentage;
+    // the percentage of sale that an artist gets on secondary sales
+    uint256 public artistSecondaryRoyaltyPercentage;
     // The amount of artwork + control tokens that have been minted
     uint256 private numTotalTokens;
 
@@ -173,7 +180,7 @@ contract AsyncArtwork is ERC721Full {
             }
 
             // create the control token
-            controlTokenIdMapping[controlTokenId] = ControlToken(numLeversPerControlToken[i]);
+            controlTokenIdMapping[controlTokenId] = ControlToken(numLeversPerControlToken[i], true);
 
             // track the control ids mapped to each artwork token id
             artworkControlTokensMapping[artworkTokenId].push(controlTokenId);
@@ -234,7 +241,8 @@ contract AsyncArtwork is ERC721Full {
     	require(ownerOf(tokenId) != msg.sender, "Owners can't rebuy their own token.");
     	// Return all highest bidder's money
     	// Distribute percentage back to Artist(s) + Platform
-    	// Transfer token
+        // TODO check if this was first or secondary sale (tokenDidHaveFirstSale)
+    	// Transfer token to msg.sender
     	// Emit event
     }
 
@@ -249,7 +257,10 @@ contract AsyncArtwork is ERC721Full {
     	// Take highest bidder money    	
     	// Return rest of second highest bidder's money
     	// Distribute percentage back to Artist(s) + Platform
-    	// reset buy price
+
+        // TODO check if this was first or secondary sale (tokenDidHaveFirstSale)
+    	
+        // reset buy price
     	buyPrices[tokenId] = 0;
     	// Transfer token
     	// Emit event
