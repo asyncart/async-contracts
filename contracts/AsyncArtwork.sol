@@ -66,7 +66,7 @@ contract AsyncArtwork is ERC721Full {
         int256 currentValue;
         // false by default, true once instantiated
         bool exists;
-    }
+    } 
 
 	// struct for a pending bid 
 	struct PendingBid {

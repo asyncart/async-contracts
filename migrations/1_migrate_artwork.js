@@ -39,8 +39,8 @@ const OWNER_ADDRESS = "0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05"
 // }
 
 module.exports = async function(deployer) {
-  var title = "Hubris";
-  var symbol = "ASYNC-HUBRIS";
+  var title = "Asynchronous Artwork";
+  var symbol = "ASYNC";
   // var artworkURI = "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa";
     
   // var controlTokenURIs = ["QmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvC", "ZmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvC"];
