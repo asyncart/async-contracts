@@ -14,7 +14,7 @@ contract("AsyncArtwork", function(accounts) {
 	it ("mints Hubris artwork", function() {
 		var title = "Hubris";
 	  	var artworkURI = "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa";	
-	  	var controlTokenURIs = ["QmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvC", "ZmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvC"];
+	  	var controlTokenURIs = ["QmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvC"];
 
 		// generate the end indices
 		var controlTokenURIEndIndex = 0;
@@ -24,11 +24,11 @@ contract("AsyncArtwork", function(accounts) {
 		  controlTokenURIEndIndices.push(controlTokenURIEndIndex)    
 		}
 
-		var numLeversPerControlToken = [1, 1];
-		var leverIds = [0, 0];
-		var minValues = [0, 0];
-		var maxValues = [1, 2];
-		var startValues = [0, 0];  
+		var numLeversPerControlToken = [1];
+		var leverIds = [0];
+		var minValues = [0];
+		var maxValues = [1];
+		var startValues = [0];  
 
 		return artworkInstance.mintArtwork(OWNER_ADDRESS, artworkURI, controlTokenURIs.join(""), controlTokenURIEndIndices, numLeversPerControlToken, 
     		leverIds, minValues, maxValues, startValues).then(function(tx) {
@@ -36,8 +36,9 @@ contract("AsyncArtwork", function(accounts) {
     		// return artworkInstance.name().then(function(artworkName) {
     			// assert.equal(artworkName, title);
 
-    			// return artworkInstance.totalSupply().then(function(supply) {
-    			// });
+    			return artworkInstance.totalSupply().then(function(supply) {
+    				console.log(supply)
+    			});
     		// });
 		});
 	});
@@ -64,12 +65,13 @@ contract("AsyncArtwork", function(accounts) {
 		return artworkInstance.mintArtwork(OWNER_ADDRESS, artworkURI, controlTokenURIs.join(""), controlTokenURIEndIndices, numLeversPerControlToken, 
     		leverIds, minValues, maxValues, startValues).then(function(tx) {
     		
-    		// return artworkInstance.name().then(function(artworkName) {
-    			// assert.equal(artworkName, title);
-
-    			// return artworkInstance.totalSupply().then(function(supply) {
-    			// });
-    		// });
+    		return artworkInstance.totalSupply().then(function(supply) {
+				console.log(supply.toString())
+				
+				return artworkInstance.useControlToken(3, [0], [500]).then(function(tx) {
+					console.log(tx)
+				});
+			});
 		});
 	});
 });
