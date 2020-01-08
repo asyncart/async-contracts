@@ -56,11 +56,11 @@ contract("AsyncArtwork", function(accounts) {
 		  controlTokenURIEndIndices.push(controlTokenURIEndIndex)    
 		}
 
-		var numLeversPerControlToken = [2];
-		var leverIds = [0, 1];
-		var minValues = [0, 0];
-		var maxValues = [1000, 1000];
-		var startValues = [0, 0];  
+		var numLeversPerControlToken = [3];
+		var leverIds = [0, 1, 2];
+		var minValues = [0, 0, 0];
+		var maxValues = [1000, 1000, 359];
+		var startValues = [500, 750, 0];  
 
 		return artworkInstance.mintArtwork(OWNER_ADDRESS, artworkURI, controlTokenURIs.join(""), controlTokenURIEndIndices, numLeversPerControlToken, 
     		leverIds, minValues, maxValues, startValues).then(function(tx) {
@@ -68,9 +68,9 @@ contract("AsyncArtwork", function(accounts) {
     		return artworkInstance.totalSupply().then(function(supply) {
 				console.log(supply.toString())
 				
-				return artworkInstance.useControlToken(3, [0], [500]).then(function(tx) {
-					console.log(tx)
-				});
+				// return artworkInstance.useControlToken(3, [0], [500]).then(function(tx) {
+				// 	console.log(tx)
+				// });
 			});
 		});
 	});

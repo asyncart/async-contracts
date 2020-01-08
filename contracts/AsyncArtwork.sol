@@ -251,16 +251,16 @@ contract AsyncArtwork is ERC721Full {
             // mark down that this first sale occurred
             tokenDidHaveFirstSale[tokenId] = true;
             // calculate the artist royalty
-            uint256 artistAmount = hundred.sub(artistSecondaryRoyaltyPercentage).mul(hundred).mul(saleAmount);
+            uint256 artistAmount = hundred.sub(artistSecondaryRoyaltyPercentage).div(hundred).mul(saleAmount);
             // transfer the artist's royalty
             artistAddressMapping[tokenId].transfer(artistAmount);            
             // calculate the platform royalty
-            platformAmount = hundred.sub(platformSecondaryRoyaltyPercentage).mul(hundred).mul(saleAmount);
+            platformAmount = hundred.sub(platformSecondaryRoyaltyPercentage).div(hundred).mul(saleAmount);
             // deduct the artist amount from the payment amount
             saleAmount = saleAmount.sub(artistAmount);
         } else {
             // else if this is the first sale for the token, give the platform the first sale royalty percentage
-            platformAmount = hundred.sub(platformFirstSaleRoyaltyPercentage).mul(hundred).mul(saleAmount);
+            platformAmount = hundred.sub(platformFirstSaleRoyaltyPercentage).div(hundred).mul(saleAmount);
         }
         // give platform its royalty
         platformAddress.transfer(platformAmount);
@@ -270,27 +270,27 @@ contract AsyncArtwork is ERC721Full {
         address payable payableOwner = address(uint160(ownerOf(tokenId)));
         // transfer the remaining amount to the owner of the token
         payableOwner.transfer(saleAmount);
-
-
-
-
-
-
     }
 
     // Buy the artwork for the currently set price
     function takeBuyPrice(uint256 tokenId) public payable {
         // don't let owners/approved buy their own tokens
         require(_isApprovedOrOwner(_msgSender(), tokenId) == false, "Owners/approved can't buy their own token.");
+        // get the sale amount
+        uint256 saleAmount = buyPrices[tokenId];
+        // check that there is a buy price
+        require(saleAmount > 0, "No buy price set for this token.");
+        // check that the buyer sent enough to purchase
+        require (msg.value >= saleAmount, "Not enough to cover buy price.");
     	// Return all highest bidder's money
         if (pendingBids[tokenId].exists) {
             // Return bid amount back to bidder
             pendingBids[tokenId].bidder.transfer(pendingBids[tokenId].amount);
             // clear highest bid
             pendingBids[tokenId] = PendingBid(address(0), 0, false);
-        }
+        }        
     	// Distribute percentage back to Artist(s) + Platform
-        // TODO check if this was first or secondary sale (tokenDidHaveFirstSale)
+        distributeProceedsFromSale(tokenId, saleAmount);
     	// Transfer token to _msgSender()
         safeTransferFrom(ownerOf(tokenId), _msgSender(), tokenId);
         // clear the approval for this token
@@ -370,7 +370,7 @@ contract AsyncArtwork is ERC721Full {
             require((newValues[i] >= lever.minValue) && (newValues[i] <= lever.maxValue), "Invalid value.");
 
             // Enforce that the new value is different
-            require(newValues[i] != lever.currentValue, "Must provide different value.");
+            require(newValues[i] != lever.currentValue, "Must provide a different lever value.");
 
             // grab previous value for the event emit
             int256 previousValue = lever.currentValue;
