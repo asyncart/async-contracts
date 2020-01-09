@@ -3,6 +3,11 @@ pragma solidity ^0.5.12;
 import "../node_modules/openzeppelin-solidity/contracts/token/ERC721/ERC721Full.sol";
 
 contract AsyncArtwork is ERC721Full {
+    // An event whenever an bid is withdrawn
+    event PlatformAddressUpdated (
+        address platformAddress
+    );
+
 	// An event whenever a bid is proposed  	
 	event BidProposed (		
 		address bidder,
@@ -115,17 +120,18 @@ contract AsyncArtwork is ERC721Full {
         _;    
     }
 
+    // Allows the current platform address to update to something different
+    function updatePlatformAddress(address payable newPlatformAddress) public onlyPlatform {
+        platformAddress = newPlatformAddress;
+
+        emit PlatformAddressUpdated(newPlatformAddress);
+    }
+
     // modifier to check if this artist is whitelisted and has a positive mint balance
     modifier onlyWhitelistedArtist() {
         // TODO check for whitelisted creator address
         _;
     }
-
-    // TODO test that total supply works
-    // // Return the total supply of tokens that have been minted (including artwork + control tokens)
-    // function totalSupply() public view returns (uint256) {
-    //     return numTotalTokens;
-    // }
 
     // utility function to get a substring with a given start + end index
     function substring(string memory str, uint startIndex, uint endIndex) internal pure returns (string memory) {
