@@ -3,7 +3,10 @@ const AsyncArtwork = artifacts.require("./AsyncArtwork.sol");
 contract("AsyncArtwork", function(accounts) {
 	var artworkInstance;
 
-	const OWNER_ADDRESS = "0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05"	
+	const OWNER_ADDRESS_ALT = "0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05"	
+	const OWNER_ADDRESS = "0x23e3161ec6f55B9474c6B264ab4a46c149912344"
+
+	const BIDDER_ADDRESS = "0x8b269B282F89EaCE7c59a6269d5b6CE4Ee6541d0"
 
 	it ("initializes contract", function() {
 		return AsyncArtwork.deployed().then(function(instance) {
@@ -37,7 +40,7 @@ contract("AsyncArtwork", function(accounts) {
     			// assert.equal(artworkName, title);
 
     			return artworkInstance.totalSupply().then(function(supply) {
-    				console.log(supply)
+    				console.log(supply.toString() + " total tokens")
     			});
     		// });
 		});
@@ -62,16 +65,25 @@ contract("AsyncArtwork", function(accounts) {
 		var maxValues = [1000, 1000, 359];
 		var startValues = [500, 750, 0];  
 
-		return artworkInstance.mintArtwork(OWNER_ADDRESS, artworkURI, controlTokenURIs.join(""), controlTokenURIEndIndices, numLeversPerControlToken, 
+		return artworkInstance.mintArtwork(OWNER_ADDRESS_ALT, artworkURI, controlTokenURIs.join(""), controlTokenURIEndIndices, numLeversPerControlToken, 
     		leverIds, minValues, maxValues, startValues).then(function(tx) {
     		
     		return artworkInstance.totalSupply().then(function(supply) {
-				console.log(supply.toString())
+				console.log(supply.toString() + " total tokens")
 				
 				// return artworkInstance.useControlToken(3, [0], [500]).then(function(tx) {
 				// 	console.log(tx)
 				// });
+				return artworkInstance.tokenOfOwnerByIndex(OWNER_ADDRESS_ALT, 1).then(function(token) {
+					console.log(token.toString() + " token id");
+				});
 			});
+		});
+	});
+
+	it ("bids on the bee owner token", function() {
+		return artworkInstance.bid(0).then(function(tx) {
+			console.log(tx);
 		});
 	});
 });

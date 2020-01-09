@@ -121,10 +121,11 @@ contract AsyncArtwork is ERC721Full {
         _;
     }
 
-    // Return the total supply of tokens that have been minted (including artwork + control tokens)
-    function totalSupply() public view returns (uint256) {
-        return numTotalTokens;
-    }
+    // TODO test that total supply works
+    // // Return the total supply of tokens that have been minted (including artwork + control tokens)
+    // function totalSupply() public view returns (uint256) {
+    //     return numTotalTokens;
+    // }
 
     // utility function to get a substring with a given start + end index
     function substring(string memory str, uint startIndex, uint endIndex) internal pure returns (string memory) {
@@ -212,19 +213,17 @@ contract AsyncArtwork is ERC721Full {
     function bid(uint256 tokenId) public payable {
     	// don't let owners/approved bid on their own tokens
         require(_isApprovedOrOwner(_msgSender(), tokenId) == false, "Token owners/approved can't bid on their own tokens.");
-
+        // require a positive value for bid
+        require (msg.value > 0, "Bids must be greater than zero.");
     	// check if there's a high bid
     	if (pendingBids[tokenId].exists) {
-    		// enforce that this bid is higher (TODO require a specific amount for increments?)
+    		// enforce that this bid is higher
     		require(msg.value > pendingBids[tokenId].amount, "Bid must be higher than previous bid amount.");
-
             // Return bid amount back to bidder
             pendingBids[tokenId].bidder.transfer(pendingBids[tokenId].amount);
     	}
-
     	// set the new highest bid
     	pendingBids[tokenId] = PendingBid(_msgSender(), msg.value, true);
-
     	// Emit event for the bid proposal
     	emit BidProposed(_msgSender(), tokenId, msg.value);
     }
@@ -296,7 +295,7 @@ contract AsyncArtwork is ERC721Full {
         // clear the approval for this token
         approve(address(0), tokenId);
         // Emit event
-        emit TokenSale(_msgSender(), tokenId, buyPrices[tokenId]);
+        emit TokenSale(_msgSender(), tokenId, saleAmount);
         // reset buy price
         buyPrices[tokenId] = 0;
         // clear highest bid
@@ -329,7 +328,7 @@ contract AsyncArtwork is ERC721Full {
         emit TokenSale(pendingBids[tokenId].bidder, tokenId, saleAmount);        
     }
 
-    // Allows owner of a control token to set an immediate buy price
+    // Allows owner of a control token to set an immediate buy price. Set to 0 to reset.
     function makeBuyPrice(uint256 tokenId, uint256 amount) public {
     	// check if sender is owner/approved of token        
     	require(_isApprovedOrOwner(_msgSender(), tokenId), "Only token owner or approved can set buy price.");
