@@ -3,12 +3,19 @@ pragma solidity ^0.5.12;
 import "../node_modules/openzeppelin-solidity/contracts/token/ERC721/ERC721Full.sol";
 
 contract AsyncArtwork is ERC721Full {
-    // An event whenever an bid is withdrawn
+    // An event whenever the platform address is updated
     event PlatformAddressUpdated (
         address platformAddress
     );
 
-	// An event whenever a bid is proposed  	
+    // An event whenever royalty amounts are updated
+    event RoyaltyAmountUpdated (
+        uint256 newPlatformFirstSaleRoyaltyPercentage,
+        uint256 newPlatformSecondaryRoyaltyPercentage,
+        uint256 newArtistSecondaryRoyaltyPercentage
+    );
+
+	// An event whenever a bid is proposed
 	event BidProposed (		
 		address bidder,
 		uint256 tokenId,
@@ -125,6 +132,18 @@ contract AsyncArtwork is ERC721Full {
         platformAddress = newPlatformAddress;
 
         emit PlatformAddressUpdated(newPlatformAddress);
+    }
+
+    function updateRoyaltyPercentages(uint256 _platformFirstSaleRoyaltyPercentage, uint256 _platformSecondaryRoyaltyPercentage, 
+        uint256 _artistSecondaryRoyaltyPercentage) public onlyPlatform {
+        // update the percentage that the platform gets on first sale
+        platformFirstSaleRoyaltyPercentage = _platformFirstSaleRoyaltyPercentage;
+        // update the percentage that the platform gets on secondary sales
+        platformSecondaryRoyaltyPercentage = _platformSecondaryRoyaltyPercentage;
+        // update the percentage that artists get on secondary sales
+        artistSecondaryRoyaltyPercentage = _artistSecondaryRoyaltyPercentage;
+        // emit an event that contains the new royalty percentage values
+        emit RoyaltyAmountUpdated(platformFirstSaleRoyaltyPercentage, platformSecondaryRoyaltyPercentage, artistSecondaryRoyaltyPercentage);
     }
 
     // modifier to check if this artist is whitelisted and has a positive mint balance
