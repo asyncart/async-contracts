@@ -1,12 +1,14 @@
 const AsyncArtwork = artifacts.require("./AsyncArtwork.sol");
 
+// const json = require("./../build/contracts/AsyncArtwork.json");
+// const contract_interface = json["abi"];
+
 contract("AsyncArtwork", function(accounts) {
 	var artworkInstance;
 
-	const OWNER_ADDRESS_ALT = "0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05"	
-	const OWNER_ADDRESS = "0x23e3161ec6f55B9474c6B264ab4a46c149912344"
+	const POV_ADDRESS = "0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05"
 
-	const BIDDER_ADDRESS = "0x8b269B282F89EaCE7c59a6269d5b6CE4Ee6541d0"
+	const TEST_OWNER_ADDRESS = "0x23e3161ec6f55B9474c6B264ab4a46c149912344"
 
 	it ("initializes contract", function() {
 		return AsyncArtwork.deployed().then(function(instance) {
@@ -33,7 +35,7 @@ contract("AsyncArtwork", function(accounts) {
 		var maxValues = [1];
 		var startValues = [0];  
 
-		return artworkInstance.mintArtwork(OWNER_ADDRESS, artworkURI, controlTokenURIs.join(""), controlTokenURIEndIndices, numLeversPerControlToken, 
+		return artworkInstance.mintArtwork(TEST_OWNER_ADDRESS, artworkURI, controlTokenURIs.join(""), controlTokenURIEndIndices, numLeversPerControlToken, 
     		leverIds, minValues, maxValues, startValues).then(function(tx) {
     		
     		// return artworkInstance.name().then(function(artworkName) {
@@ -65,7 +67,7 @@ contract("AsyncArtwork", function(accounts) {
 		var maxValues = [1000, 1000, 359];
 		var startValues = [500, 750, 0];  
 
-		return artworkInstance.mintArtwork(OWNER_ADDRESS_ALT, artworkURI, controlTokenURIs.join(""), controlTokenURIEndIndices, numLeversPerControlToken, 
+		return artworkInstance.mintArtwork(TEST_OWNER_ADDRESS, artworkURI, controlTokenURIs.join(""), controlTokenURIEndIndices, numLeversPerControlToken, 
     		leverIds, minValues, maxValues, startValues).then(function(tx) {
     		
     		return artworkInstance.totalSupply().then(function(supply) {
@@ -74,7 +76,7 @@ contract("AsyncArtwork", function(accounts) {
 				// return artworkInstance.useControlToken(3, [0], [500]).then(function(tx) {
 				// 	console.log(tx)
 				// });
-				return artworkInstance.tokenOfOwnerByIndex(OWNER_ADDRESS_ALT, 1).then(function(token) {
+				return artworkInstance.tokenOfOwnerByIndex(TEST_OWNER_ADDRESS, 1).then(function(token) {
 					console.log(token.toString() + " token id");
 				});
 			});
@@ -82,94 +84,19 @@ contract("AsyncArtwork", function(accounts) {
 	});
 
 	it ("bids on the bee owner token", function() {
-		return artworkInstance.bid(0).then(function(tx) {
-			console.log(tx);
+		const BID_AMOUNT = 100;
+		const TOKEN_TO_BID_ON = 0;
+
+		return artworkInstance.bid(TOKEN_TO_BID_ON, {
+			value: BID_AMOUNT
+		}).then(function(tx) {
+			return artworkInstance.pendingBids(TOKEN_TO_BID_ON).then(function(bid) {
+				console.log("Bidder: " + bid.bidder);
+				console.log("Bid Amount: " + bid.amount.toString())
+
+				// assert that bid amount for this token is the same
+				assert.equal(parseInt(bid.amount.toString()), BID_AMOUNT);
+			});
 		});
 	});
 });
-
-
-// const MyERC721 = artifacts.require("./MyERC721.sol");
-
-// contract("Scribe", function(accounts) {
-//   var scribeInstance;
-//   var myERC721Instance;
-//   var documentKey;
-
-//   var tokenOwnerAddress = "0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05"
-
-//   var dictationMessage = "This is a message"
-
-//   it("initializes contracts", function() {
-//     return Scribe.deployed().then(function(instance) {
-//       scribeInstance = instance;
-
-//       return MyERC721.deployed();
-//       // return scribeInstance.getDocumentKey(tokenAddress, tokenId)
-//     }).then(function(instance) {
-//     	myERC721Instance = instance;
-
-
-// 		// documentKey = _documentKey;
-
-//       	// assert.equal(documentKey, "0xd68f4893e2683be6efe6aab3fca65848acafcc050000000000000000000000000000000000000000000000000000000000000001");
-//     });
-//   });
-
-//   it("mints a sample ERC721 token and asserts that the token was minted and received", function() {
-//     return myERC721Instance.mintUniqueTokenTo(tokenOwnerAddress, 3, "QmZuKRfpCWV8SWgFcvjUWWQtn47axMYmdrPafvzTmppTPv").then(function(tx) {
-//     	return myERC721Instance.ownerOf(3);
-//     }).then(function(owner) {    
-//       assert.equal(owner, tokenOwnerAddress)
-//     });
-//   });
-
-//   it("dictates a record for the scribe and that the message is expected", function() {
-//     return scribeInstance.dictate(myERC721Instance.address, 3, dictationMessage).then(function(tx) {    	
-//     	return scribeInstance.getDocumentKey(myERC721Instance.address, 3);
-//     }).then(function(_documentKey) {    
-//     	documentKey = _documentKey;
-
-//     	return scribeInstance.documents(documentKey, 0);
-//     }).then(function(document) {    
-//     	console.log(document.dictator)
-//     	console.log(document.text)
-    	
-//     	assert.equal(document.text, dictationMessage)
-//     });
-//   });
-
-//   // it("records one message and asserts document count is still correct", function() {
-//   //   return Scribe.deployed().then(function(instance) {
-//   //     scribeInstance.dictate(tokenAddress, tokenId, "Foo")
-
-//   //     return scribeInstance.documentsCount(documentKey)
-//   //   }).then(function(documentsCount) {    
-//   //     assert.equal(documentsCount, 3);
-//   //   });
-//   // });
-
-//   // it("asserts that message from first recording is correct", function() {
-//   //   return Scribe.deployed().then(function(instance) {
-//   //     return scribeInstance.documents(documentKey, 0)
-//   //   }).then(function(document) {    
-//   //   	assert.equal(document.text, "Hello")
-//   //   });
-//   // });
-
-//   // it("records message for new token and asserts that document count is correct", function() {
-//   //   return Scribe.deployed().then(function(instance) {
-// 		// tokenId = 2
-      	
-//   //     	scribeInstance.dictate(tokenAddress, tokenId, "Piano")
-
-//   //     	return scribeInstance.getDocumentKey(tokenAddress, tokenId)
-//   //   }).then(function(_documentKey) {    
-//   //   	documentKey = _documentKey;
-    	
-//   //   	return scribeInstance.documentsCount(documentKey);
-//   //   }).then(function(documentsCount) {
-//   //   	assert.equal(documentsCount, 1)
-//   //   })
-//   // });
-// });
