@@ -84,18 +84,34 @@ contract("AsyncArtwork", function(accounts) {
 	});
 
 	it ("bids on the bee owner token", function() {
-		const BID_AMOUNT = 100;
+		const BID_AMOUNT_ETHER = 0.1;
 		const TOKEN_TO_BID_ON = 0;
 
-		return artworkInstance.bid(TOKEN_TO_BID_ON, {
-			value: BID_AMOUNT
-		}).then(function(tx) {
-			return artworkInstance.pendingBids(TOKEN_TO_BID_ON).then(function(bid) {
-				console.log("Bidder: " + bid.bidder);
-				console.log("Bid Amount: " + bid.amount.toString())
+		return web3.eth.getBalance(POV_ADDRESS).then(function(balance) {
+			balance = balance / (10 ** 18)
 
-				// assert that bid amount for this token is the same
-				assert.equal(parseInt(bid.amount.toString()), BID_AMOUNT);
+			console.log("Balance before bid: " + balance)
+
+			return artworkInstance.bid(TOKEN_TO_BID_ON, {
+				value: web3.utils.toWei(BID_AMOUNT_ETHER.toString(), 'ether')
+			}).then(function(tx) {
+				return web3.eth.getBalance(POV_ADDRESS).then(function(balance) {
+					balance = balance / (10 ** 18)
+
+					console.log("Balance after bid: " + balance)
+
+					// the artwork should hold some ether now
+					return web3.eth.getBalance(artworkInstance.address).then(function(artworkContractBalance) {
+						console.log("Artwork Contract Balance: " + artworkContractBalance.toString())
+					});
+				});
+				// return artworkInstance.pendingBids(TOKEN_TO_BID_ON).then(function(bid) {
+				// 	console.log("Bidder: " + bid.bidder);
+				// 	console.log("Bid Amount: " + bid.amount.toString())
+
+				// 	// assert that bid amount for this token is the same
+				// 	assert.equal(parseInt(bid.amount.toString()), BID_AMOUNT);
+				// });
 			});
 		});
 	});
