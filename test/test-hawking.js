@@ -1,8 +1,5 @@
 const AsyncArtwork = artifacts.require("./AsyncArtwork.sol");
 
-// const json = require("./../build/contracts/AsyncArtwork.json");
-// const contract_interface = json["abi"];
-
 contract("AsyncArtwork", function(accounts) {
 	var artworkInstance;
 
@@ -45,7 +42,7 @@ contract("AsyncArtwork", function(accounts) {
 
 	it ("mints Hawking Artwork", function() {
 	  	var artworkURI = "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa";	
-	  	var controlTokenURIs = ["001.png"];
+	  	var controlTokenURIs = ["001.png", "002.png"];
 
 		// generate the end indices
 		var controlTokenURIEndIndex = 0;
@@ -55,12 +52,12 @@ contract("AsyncArtwork", function(accounts) {
 		  controlTokenURIEndIndices.push(controlTokenURIEndIndex)    
 		}
 
-		var numLeversPerControlToken = [5];
+		var numLeversPerControlToken = [5, 5];
 		// X, Y, Rotation, Scale X, Scale Y
-		var leverIds = [0, 1, 2, 3, 4];
-		var minValues = [0, 0, 0, 100, 100];
-		var maxValues = [1000, 1000, 359, 200, 200];
-		var startValues = [500, 750, 0, 100, 100];  
+		var leverIds = [0, 1, 2, 3, 4, 0, 1, 2, 3, 4];
+		var minValues = [0, 0, 0, 100, 100, 0, 0, 0, 100, 100];
+		var maxValues = [2048, 2048, 359, 200, 200, 2048, 2048, 359, 200, 200];
+		var startValues = [1024, 1024, 0, 100, 100, 1024, 1024, 0, 100, 100];  
 
 		return artworkInstance.mintArtwork(TEST_OWNER_ADDRESS, artworkURI, controlTokenURIs.join(""), controlTokenURIEndIndices, numLeversPerControlToken, 
     		leverIds, minValues, maxValues, startValues).then(function(tx) {

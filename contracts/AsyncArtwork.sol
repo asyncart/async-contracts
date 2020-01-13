@@ -122,6 +122,7 @@ contract AsyncArtwork is ERC721Full {
         artistSecondaryRoyaltyPercentage = 3;
   	}
 
+    // modifier for only allowing the platform to make a call
     modifier onlyPlatform() {
         require(_msgSender() == platformAddress, "Only platform is allowed to perform this action.");
         _;    
