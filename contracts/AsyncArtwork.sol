@@ -110,16 +110,16 @@ contract AsyncArtwork is ERC721Full {
     uint256 public platformSecondaryRoyaltyPercentage;
     // the percentage of sale that an artist gets on secondary sales
     uint256 public artistSecondaryRoyaltyPercentage;
-    // The amount of artwork + control tokens that have been minted
-    uint256 private numTotalTokens;
     // the address of the platform (for receving commissions and royalties)
     address payable private platformAddress;
 
 	constructor (string memory name, string memory symbol) public ERC721Full(name, symbol) {
-        // TODO add functions to set these
         platformFirstSaleRoyaltyPercentage = 10;
         platformSecondaryRoyaltyPercentage = 1;
         artistSecondaryRoyaltyPercentage = 3;
+
+        // by default, the platformAddress is the address that mints this contract
+        platformAddress = _msgSender();
   	}
 
     // modifier for only allowing the platform to make a call
@@ -135,6 +135,7 @@ contract AsyncArtwork is ERC721Full {
         emit PlatformAddressUpdated(newPlatformAddress);
     }
 
+    // Update the royalty percentages that platform and artists receive on first or secondary sales
     function updateRoyaltyPercentages(uint256 _platformFirstSaleRoyaltyPercentage, uint256 _platformSecondaryRoyaltyPercentage, 
         uint256 _artistSecondaryRoyaltyPercentage) public onlyPlatform {
         // update the percentage that the platform gets on first sale
@@ -164,7 +165,7 @@ contract AsyncArtwork is ERC721Full {
     }
   	
   	// Mint a piece of artwork. _msgSender() must be a whitelisted artist and have a positive mint balance 
-    function mintArtwork(address to, string memory artworkTokenURI, 
+    function mintArtwork(address to, uint256 artworkTokenId, string memory artworkTokenURI, 
         string memory newControlTokenURIs,
         uint256[] memory newControlTokenURIEndIndices,        
         uint256[] memory numLeversPerControlToken,
@@ -181,11 +182,10 @@ contract AsyncArtwork is ERC721Full {
         // enforce that URI end indices is same length as levers per control token array (must be 1 URI for each control token)
         require(newControlTokenURIEndIndices.length == numLeversPerControlToken.length, 
             "newControlTokenURIEndIndices and numLeversPerControlToken must be same length.");
-
-        // generate a new token ID from the current supply amount
-        uint256 artworkTokenId = totalSupply();
-        // increment the number of tokens that have been minted
-        numTotalTokens = numTotalTokens.add(1);
+        // check that the total supply is equal to our expected token ID. This is required because mintArtwork assigns
+        // control token IDs based on the total supply as tokens are minted and the generated artworkTokenURI already assumes 
+        // specific token IDs were available before calling mintArtwork
+        require (artworkTokenId == totalSupply(), "Expected tokenId has changed. Please re-check artwork metadata and expected tokens ids.");    
         // Mint the token that represents ownership of the entire artwork    
         super._safeMint(to, artworkTokenId);
         super._setTokenURI(artworkTokenId, artworkTokenURI);
@@ -198,9 +198,6 @@ contract AsyncArtwork is ERC721Full {
         // iterate through all control token URIs (1 for each control token)
         for (uint256 i = 0; i < numLeversPerControlToken.length; i++) {
             uint256 controlTokenId = totalSupply();
-            // increment the number of tokens that have been minted
-            numTotalTokens = numTotalTokens.add(1);
-
             // track the _msgSender() address as the artist address for future royalties
             artistAddressMapping[controlTokenId] = _msgSender();
 
