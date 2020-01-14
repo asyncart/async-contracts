@@ -68,7 +68,7 @@ contract("AsyncArtwork", function(accounts) {
 				console.log(supply.toString() + " total tokens")
 
 				// the artwork token should be confirmed since all the control artists are the same as the POV artist
-				return artworkInstance.isConfirmedArtworkOrControlToken(expectedArtworkTokenId).then(function(isConfirmed) {
+				return artworkInstance.isContainingArtworkConfirmed(expectedArtworkTokenId).then(function(isConfirmed) {
 					assert.isTrue(isConfirmed);
 				});
 			});
@@ -103,7 +103,7 @@ contract("AsyncArtwork", function(accounts) {
 				console.log(supply.toString() + " total tokens")
 
 				// the artwork token should NOT be confirmed since there are different artists for each control token
-				return artworkInstance.isConfirmedArtworkOrControlToken(expectedArtworkTokenId).then(function(isConfirmed) {
+				return artworkInstance.isContainingArtworkConfirmed(expectedArtworkTokenId).then(function(isConfirmed) {
 					assert.isFalse(isConfirmed);
 
 					// var tokenId = expectedArtworkTokenId + 1;
