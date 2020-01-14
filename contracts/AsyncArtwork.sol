@@ -178,7 +178,7 @@ contract AsyncArtwork is ERC721Full {
             // Enforce that this control token belongs to the provided containing artwork token
             require (controlTokenIdMapping[controlTokenIds[i]].containingArtworkTokenId == containingArtworkTokenId, "Art Id mismatch");
             // Enforce that the msgSender is in fact the artist that this control token piece is by
-            require(artistAddressMapping[controlTokenIds[i]] == _msgSender(), "Sender must be control token artist");
+            require(artistAddressMapping[controlTokenIds[i]] == _msgSender(), "Must be control token artist");
             // confirm this token
             tokenIsConfirmed[controlTokenIds[i]] = true;
         }
@@ -275,10 +275,10 @@ contract AsyncArtwork is ERC721Full {
             // create the control token levers now
             for (uint256 k = 0; k < numLeversPerControlToken[i]; k++) {
                 // enforce that maxValue is greater than or equal to minValue
-                require (maxValues[controlTokenLeverIndex] >= minValues[controlTokenLeverIndex], "Max value must >= min");
+                require (maxValues[controlTokenLeverIndex] >= minValues[controlTokenLeverIndex], "Max val must >= min");
                 // enforce that currentValue is valid
                 require((startValues[controlTokenLeverIndex] >= minValues[controlTokenLeverIndex]) && 
-                    (startValues[controlTokenLeverIndex] <= maxValues[controlTokenLeverIndex]), "Invalid start value.");
+                    (startValues[controlTokenLeverIndex] <= maxValues[controlTokenLeverIndex]), "Invalid start val");
                 // add the lever to this token
                 controlTokenIdMapping[controlTokenId].levers[k] = ControlLever(minValues[controlTokenLeverIndex],
                     maxValues[controlTokenLeverIndex], startValues[controlTokenLeverIndex], true);
@@ -294,8 +294,6 @@ contract AsyncArtwork is ERC721Full {
         require(_isApprovedOrOwner(_msgSender(), tokenId) == false, "Owners cant rebuy");
         // enforce that this artwork (or containing artwork if it's a control token) has been confirmed
         require(isContainingArtworkConfirmed(tokenId), "Art not confirmed");
-        // require a positive value for bid
-        require (msg.value > 0, "Bid must be > 0");
     	// check if there's a high bid
     	if (pendingBids[tokenId].exists) {
     		// enforce that this bid is higher
@@ -424,7 +422,7 @@ contract AsyncArtwork is ERC721Full {
     // used during the render process to determine values
     function getControlLeverValue(uint256 controlTokenId, uint256 leverId) public view returns (int256) {
         // check that a control token exists for this token id
-        require (controlTokenIdMapping[controlTokenId].exists, "No control token found for this id");
+        require (controlTokenIdMapping[controlTokenId].exists, "No control token found");
 
         return controlTokenIdMapping[controlTokenId].levers[leverId].currentValue;
     }
@@ -432,7 +430,7 @@ contract AsyncArtwork is ERC721Full {
     // used for token owners to know the range of values they can use for a control lever.
     function getControlLeverMinMax(uint256 controlTokenId, uint256 leverId) public view returns (int256[] memory) {
         // check that a control token exists for this token id
-        require (controlTokenIdMapping[controlTokenId].exists, "No control token found for this id");
+        require (controlTokenIdMapping[controlTokenId].exists, "No control token found");
 
         int256[] memory minMax = new int256[](2);
 
@@ -459,10 +457,10 @@ contract AsyncArtwork is ERC721Full {
             ControlLever storage lever = controlTokenIdMapping[controlTokenId].levers[leverIds[i]];
 
             // Enforce that the new value is valid        
-            require((newValues[i] >= lever.minValue) && (newValues[i] <= lever.maxValue), "Invalid value.");
+            require((newValues[i] >= lever.minValue) && (newValues[i] <= lever.maxValue), "Invalid val");
 
             // Enforce that the new value is different
-            require(newValues[i] != lever.currentValue, "Must provide different lever value.");
+            require(newValues[i] != lever.currentValue, "Must provide different val");
 
             // grab previous value for the event emit
             int256 previousValue = lever.currentValue;
