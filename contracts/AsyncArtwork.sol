@@ -60,6 +60,8 @@ contract AsyncArtwork is ERC721Full {
 
     // struct for a token that controls part of the artwork
     struct ControlToken {
+        // the containing artwork token that this control token belongs to
+        uint256 containingArtworkTokenId;
         // the levers that this control token can use
         mapping (uint256 => ControlLever) levers;
         // number that tracks how many levers there are
@@ -103,7 +105,9 @@ contract AsyncArtwork is ERC721Full {
     // map a control token ID to its highest bid
 	mapping (uint256 => PendingBid) public pendingBids;
     // track whether this token was sold the first time or not (used for determining whether to use first or secondary sale percentage)
-    mapping (uint256 => bool) tokenDidHaveFirstSale;    
+    mapping (uint256 => bool) tokenDidHaveFirstSale;
+    // only finalized artworks can be interacted with. All collaborating artists must confirm their token ID for a piece to finalize.
+    mapping (uint256 => bool) tokenIsConfirmed;
     // the percentage of sale that the platform gets on first sales
     uint256 public platformFirstSaleRoyaltyPercentage;
     // the percentage of sale that the platform gets on secondary sales
@@ -154,6 +158,44 @@ contract AsyncArtwork is ERC721Full {
         _;
     }
 
+    // return whether a token ID has been confirmed by its artist
+    function isConfirmedArtworkOrControlToken(uint256 tokenId) public view returns (bool) {
+        // if this is a control token
+        if (controlTokenIdMapping[tokenId].exists) {
+            return tokenIsConfirmed[controlTokenIdMapping[tokenId].containingArtworkTokenId];
+        } else {
+            return tokenIsConfirmed[tokenId];
+        }
+    }
+
+    // Intended to be called by a collaborating artist. Confirm all the control tokens that they're responsible for
+    function confirmCollaboratorControlTokenIds(uint256 containingArtworkTokenId, uint256[] memory controlTokenIds) public onlyWhitelistedArtist {
+        // for each control token id provided...
+        for (uint256 i = 0; i < controlTokenIds.length; i++) {
+            // check that a control token exists for this token id
+            require (controlTokenIdMapping[controlTokenIds[i]].exists, "No control token found for this id");
+            // Enforce that this control token belongs to the provided containing artwork token
+            require (controlTokenIdMapping[controlTokenIds[i]].containingArtworkTokenId == containingArtworkTokenId,
+                "All control tokens being confirmed must belong to the provided artwork token Id");
+            // Enforce that the msgSender is in fact the artist that this control token piece is by
+            require(artistAddressMapping[controlTokenIds[i]] == _msgSender(), 
+                "MsgSender() must be the mapped artist for the control token they're confirming.");
+            // confirm this token
+            tokenIsConfirmed[controlTokenIds[i]] = true;
+        }
+
+        // TODO emit an event to say that these tokens have been confirmed
+        // TODO check if all the control tokens have been confirmed, and if so confirm the containing artwork id
+    }
+
+    modifier expectedTokenIdAvailable(uint256 expectedArtworkTokenId) {
+        // check that the total supply is equal to our expected token ID. This is required because mintArtwork assigns
+        // control token IDs based on the total supply as tokens are minted and the generated artworkTokenURI already assumes 
+        // specific token IDs were available before calling mintArtwork
+        require (expectedArtworkTokenId == totalSupply(), "Expected expectedArtworkTokenId has changed. Please re-check artwork metadata and expected token ids.");
+        _;
+    }
+
     // utility function to get a substring with a given start + end index
     function substring(string memory str, uint startIndex, uint endIndex) internal pure returns (string memory) {
         bytes memory strBytes = bytes(str);
@@ -165,54 +207,61 @@ contract AsyncArtwork is ERC721Full {
     }
   	
   	// Mint a piece of artwork. _msgSender() must be a whitelisted artist and have a positive mint balance 
-    function mintArtwork(address to, uint256 artworkTokenId, string memory artworkTokenURI, 
-        string memory newControlTokenURIs,
-        uint256[] memory newControlTokenURIEndIndices,        
+    function mintArtwork(uint256 artworkTokenId, string memory artworkTokenURI, 
+        address payable[] memory controlTokenArtists,
+        string memory controlTokenURIs,
+        uint256[] memory controlTokenURIEndIndices,     
         uint256[] memory numLeversPerControlToken,
-        uint256[] memory leverIds,
         int256[] memory minValues, 
         int256[] memory maxValues,
         int256[] memory startValues
-    ) public onlyWhitelistedArtist {
-        // enforce that at least 1 lever id is passed in
-        require(leverIds.length > 0, "Must pass in at least 1 lever id.");
+    ) public onlyWhitelistedArtist expectedTokenIdAvailable(artworkTokenId) {
+        // enforce that a control token artist has been provided for every control token
+        require(controlTokenArtists.length == controlTokenURIEndIndices.length, 
+            "There must be at least 1 artist address provided for each control token.");
         // enforce that the length of all the array lengths are equal
-        require((leverIds.length == minValues.length) && (minValues.length == maxValues.length) && (maxValues.length == startValues.length),
+        require((minValues.length == maxValues.length) && (maxValues.length == startValues.length),
             "LeverIds, MinValues, MaxValues, and StartValues arrays must be same length.");
         // enforce that URI end indices is same length as levers per control token array (must be 1 URI for each control token)
-        require(newControlTokenURIEndIndices.length == numLeversPerControlToken.length, 
-            "newControlTokenURIEndIndices and numLeversPerControlToken must be same length.");
-        // check that the total supply is equal to our expected token ID. This is required because mintArtwork assigns
-        // control token IDs based on the total supply as tokens are minted and the generated artworkTokenURI already assumes 
-        // specific token IDs were available before calling mintArtwork
-        require (artworkTokenId == totalSupply(), "Expected tokenId has changed. Please re-check artwork metadata and expected tokens ids.");    
+        require(controlTokenURIEndIndices.length == numLeversPerControlToken.length, 
+            "controlTokenURIEndIndices and numLeversPerControlToken must be same length.");        
         // Mint the token that represents ownership of the entire artwork    
-        super._safeMint(to, artworkTokenId);
+        super._safeMint(_msgSender(), artworkTokenId);
         super._setTokenURI(artworkTokenId, artworkTokenURI);
+        // by default, this ownership artwork token is confirmed from the _msgSender().
+        // This will revert to false if one of the control token artists is different from _msgSpender()
+        tokenIsConfirmed[artworkTokenId] = true;
         // track the number of control tokens that each artwork contains
-        numControlTokensMapping[artworkTokenId] = newControlTokenURIEndIndices.length;
+        numControlTokensMapping[artworkTokenId] = controlTokenURIEndIndices.length;
         // track the _msgSender() address as the artist address for future royalties
         artistAddressMapping[artworkTokenId] = _msgSender();
         // index to track our control token lever values for min/max/start
         uint256 controlTokenLeverIndex = 0;
         // iterate through all control token URIs (1 for each control token)
         for (uint256 i = 0; i < numLeversPerControlToken.length; i++) {
+            // use the curren token supply as the next token id
             uint256 controlTokenId = totalSupply();
-            // track the _msgSender() address as the artist address for future royalties
-            artistAddressMapping[controlTokenId] = _msgSender();
-
+            // map the provided control token artist to its control token ID
+            artistAddressMapping[controlTokenId] = controlTokenArtists[i];            
+            // if this control token artist is the msgSender then it's confirmed by default
+            if (controlTokenArtists[i] == _msgSender()) {
+                tokenIsConfirmed[controlTokenId] = true;
+            } else {
+                // if even just 1 control token artist is different from the sender, then the ownership artwork is not confirmed.
+                // (It will only be confirmed once all control token artists have confirmed on their own)
+                tokenIsConfirmed[artworkTokenId] = false;
+            }
             // mint the control token
-            super._safeMint(to, controlTokenId);
+            super._safeMint(controlTokenArtists[i], controlTokenId);
             // set the URI
             if (i > 0) {
-                super._setTokenURI(controlTokenId, substring(newControlTokenURIs, newControlTokenURIEndIndices[i - 1], newControlTokenURIEndIndices[i]));
+                super._setTokenURI(controlTokenId, substring(controlTokenURIs, controlTokenURIEndIndices[i - 1], controlTokenURIEndIndices[i]));
             } else {
-                super._setTokenURI(controlTokenId, substring(newControlTokenURIs, 0, newControlTokenURIEndIndices[i]));
+                super._setTokenURI(controlTokenId, substring(controlTokenURIs, 0, controlTokenURIEndIndices[i]));
             }
 
             // create the control token
-            controlTokenIdMapping[controlTokenId] = ControlToken(numLeversPerControlToken[i], true);
-
+            controlTokenIdMapping[controlTokenId] = ControlToken(artworkTokenId, numLeversPerControlToken[i], true);
             // track the control ids mapped to each artwork token id
             artworkControlTokensMapping[artworkTokenId].push(controlTokenId);
 
@@ -236,6 +285,8 @@ contract AsyncArtwork is ERC721Full {
     function bid(uint256 tokenId) public payable {
     	// don't let owners/approved bid on their own tokens
         require(_isApprovedOrOwner(_msgSender(), tokenId) == false, "Token owners/approved can't bid on their own tokens.");
+        // enforce that this artwork (or containing artwork if it's a control token) has been confirmed
+        require(isConfirmedArtworkOrControlToken(tokenId), "The containing artwork for this control token has not been confirmed by all collaborators.");
         // require a positive value for bid
         require (msg.value > 0, "Bids must be greater than zero.");
     	// check if there's a high bid
@@ -355,6 +406,8 @@ contract AsyncArtwork is ERC721Full {
     function makeBuyPrice(uint256 tokenId, uint256 amount) public {
     	// check if sender is owner/approved of token        
     	require(_isApprovedOrOwner(_msgSender(), tokenId), "Only token owner or approved can set buy price.");
+        // enforce that this artwork (or containing artwork if it's a control token) has been confirmed
+        require(isConfirmedArtworkOrControlToken(tokenId), "The containing artwork for this control token has not been confirmed by all collaborators.");
     	// set the buy price
     	buyPrices[tokenId] = amount;
     	// emit event
@@ -362,31 +415,41 @@ contract AsyncArtwork is ERC721Full {
     }
 
     // used during the render process to determine values
-    function getControlLeverValue(uint256 tokenId, uint256 leverId) public view returns (int256) {
-        return controlTokenIdMapping[tokenId].levers[leverId].currentValue;
+    function getControlLeverValue(uint256 controlTokenId, uint256 leverId) public view returns (int256) {
+        // check that a control token exists for this token id
+        require (controlTokenIdMapping[controlTokenId].exists, "No control token found for this id");
+
+        return controlTokenIdMapping[controlTokenId].levers[leverId].currentValue;
     }
 
     // used for token owners to know the range of values they can use for a control lever.
-    function getControlLeverMinMax(uint256 tokenId, uint256 leverId) public view returns (int256[] memory) {
+    function getControlLeverMinMax(uint256 controlTokenId, uint256 leverId) public view returns (int256[] memory) {
+        // check that a control token exists for this token id
+        require (controlTokenIdMapping[controlTokenId].exists, "No control token found for this id");
+
         int256[] memory minMax = new int256[](2);
 
-        minMax[0] = controlTokenIdMapping[tokenId].levers[leverId].minValue;
-        minMax[1] = controlTokenIdMapping[tokenId].levers[leverId].maxValue;
+        minMax[0] = controlTokenIdMapping[controlTokenId].levers[leverId].minValue;
+        minMax[1] = controlTokenIdMapping[controlTokenId].levers[leverId].maxValue;
 
         return minMax;
     }
 
     // Allows owner of a control token to update its lever values
-    function useControlToken(uint256 tokenId, uint256[] memory leverIds, int256[] memory newValues) public {
+    function useControlToken(uint256 controlTokenId, uint256[] memory leverIds, int256[] memory newValues) public {
+        // check that a control token exists for this token id
+        require (controlTokenIdMapping[controlTokenId].exists, "No control token found for this id");
     	// check if sender is owner/approved of token        
-        require(_isApprovedOrOwner(_msgSender(), tokenId), "Control tokens only usuable by owners/approved.");
-
+        require(_isApprovedOrOwner(_msgSender(), controlTokenId), "Control tokens only usuable by owners/approved.");
+        // enforce that this artwork (or containing artwork if it's a control token) has been confirmed
+        require(isConfirmedArtworkOrControlToken(controlTokenId), "The containing artwork for this control token has not been confirmed by all collaborators.");
+ 
         // collect the previous lever values for the event emit below
         int256[] memory previousValues = new int256[](newValues.length);
 
         for (uint256 i = 0; i < leverIds.length; i++) {
             // get the control lever
-            ControlLever storage lever = controlTokenIdMapping[tokenId].levers[leverIds[i]];
+            ControlLever storage lever = controlTokenIdMapping[controlTokenId].levers[leverIds[i]];
 
             // Enforce that the new value is valid        
             require((newValues[i] >= lever.minValue) && (newValues[i] <= lever.maxValue), "Invalid value.");
@@ -405,6 +468,6 @@ contract AsyncArtwork is ERC721Full {
         }
         
     	// emit event
-    	emit ControlLeverUpdated(_msgSender(), tokenId, leverIds, previousValues, newValues);
+    	emit ControlLeverUpdated(_msgSender(), controlTokenId, leverIds, previousValues, newValues);
     }
 }
