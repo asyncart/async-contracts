@@ -3,7 +3,7 @@ const AsyncArtwork = artifacts.require("./AsyncArtwork.sol");
 contract("AsyncArtwork", function(accounts) {
 	var artworkInstance;
 
-	const POV_ADDRESS = "0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05"
+	const POV_ADDRESS = "0xC5E7E2c3d3BC9B35bc6D0D27cf9eA79F37Cf6f7d"
 
 	const TEST_OWNER_ADDRESS = "0x23e3161ec6f55B9474c6B264ab4a46c149912344"
 
@@ -41,82 +41,100 @@ contract("AsyncArtwork", function(accounts) {
 	// });
 
 	it ("mints Hawking Artwork by single artist", function() {
-	  	var artworkURI = "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa";	
-	  	var controlTokenURIs = ["001.png", "002.png"];
-
-		// generate the end indices
-		var controlTokenURIEndIndex = 0;
-		var controlTokenURIEndIndices = []; 
-		for (var i = 0; i < controlTokenURIs.length; i++) {
-		  controlTokenURIEndIndex += controlTokenURIs[i].length;    
-		  controlTokenURIEndIndices.push(controlTokenURIEndIndex)    
-		}
+	  	var artworkURI = "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa";		  	
 
 		var expectedArtworkTokenId = 0;
-		var controlTokenArtists = [POV_ADDRESS, POV_ADDRESS];
-		var numLeversPerControlToken = [5, 5];
-		// X, Y, Rotation, Scale X, Scale Y
-		var minValues = [0, 0, 0, 100, 100, 0, 0, 0, 100, 100];
-		var maxValues = [2048, 2048, 359, 200, 200, 2048, 2048, 359, 200, 200];
-		var startValues = [1024, 1024, 0, 100, 100, 1024, 1024, 0, 100, 100];  
+		var controlTokenArtists = [];
 
-		return artworkInstance.mintArtwork(expectedArtworkTokenId, artworkURI, controlTokenArtists,
-			controlTokenURIs.join(""), controlTokenURIEndIndices, numLeversPerControlToken, 
-    		minValues, maxValues, startValues).then(function(tx) {
+		var numLayers = 2;
+		
+		// X, Y, Rotation, Scale X, Scale Y
+		var minValues = [];
+		var maxValues = [];
+		var startValues = [];  
+		var controlTokenIds = [];
+
+		var controlTokenURIs = [];
+		for (var i = 0; i < numLayers; i++) {
+			controlTokenIds.push(i);
+			controlTokenURIs.push(i + ".png");
+
+			controlTokenArtists.push(POV_ADDRESS);
+			
+			minValues.push([0, 0, 0, 50, 50]); // x y rotation scale_x scale_y
+			maxValues.push([2048, 2048, 359, 200, 200]); // x y rotation scale_x scale_y
+			startValues.push([1024, 1024, 0, 100, 100]); // x y rotation scale_x scale_y	
+		}
+
+		return artworkInstance.mintArtwork(expectedArtworkTokenId, artworkURI, controlTokenArtists).then(function(tx) {
     		
     		return artworkInstance.totalSupply().then(function(supply) {
 				console.log(supply.toString() + " total tokens")
 
 				// the artwork token should be confirmed since all the control artists are the same as the POV artist
 				return artworkInstance.isContainingArtworkConfirmed(expectedArtworkTokenId).then(function(isConfirmed) {
-					assert.isTrue(isConfirmed);
-				});
-			});
-		});
-	});
-
-	it ("mints Hawking Artwork by multiple artist", function() {
-	  	var artworkURI = "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa";	
-	  	var controlTokenURIs = ["001.png", "002.png"];
-
-		// generate the end indices
-		var controlTokenURIEndIndex = 0;
-		var controlTokenURIEndIndices = []; 
-		for (var i = 0; i < controlTokenURIs.length; i++) {
-		  controlTokenURIEndIndex += controlTokenURIs[i].length;    
-		  controlTokenURIEndIndices.push(controlTokenURIEndIndex)    
-		}
-
-		var expectedArtworkTokenId = 3;
-		var controlTokenArtists = [POV_ADDRESS, TEST_OWNER_ADDRESS];
-		var numLeversPerControlToken = [5, 5];
-		// X, Y, Rotation, Scale X, Scale Y
-		var minValues = [0, 0, 0, 100, 100, 0, 0, 0, 100, 100];
-		var maxValues = [2048, 2048, 359, 200, 200, 2048, 2048, 359, 200, 200];
-		var startValues = [1024, 1024, 0, 100, 100, 1024, 1024, 0, 100, 100];  
-
-		return artworkInstance.mintArtwork(expectedArtworkTokenId, artworkURI, controlTokenArtists,
-			controlTokenURIs.join(""), controlTokenURIEndIndices, numLeversPerControlToken, 
-    		minValues, maxValues, startValues).then(function(tx) {
-    		
-    		return artworkInstance.totalSupply().then(function(supply) {
-				console.log(supply.toString() + " total tokens")
-
-				// the artwork token should NOT be confirmed since there are different artists for each control token
-				return artworkInstance.isContainingArtworkConfirmed(expectedArtworkTokenId).then(function(isConfirmed) {
 					assert.isFalse(isConfirmed);
 
-					// var tokenId = expectedArtworkTokenId + 1;
-					// console.log(tokenId);
+					return artworkInstance.artworkControlTokensMapping(0, 0).then(function(tx) {
+						console.log(tx.toString());
+					})
+					// return artworkInstance.setupControlToken(expectedArtworkTokenId, controlTokenIds[0], controlTokenURIs[0],
+					// 	minValues[0], maxValues[0], startValues[0]).then(function(tx) {
+					// 	console.log(tx)
 
-					// // this token ID should be confirmed since it's the same as the minting POV artist
-					// return artworkInstance.isConfirmedArtworkOrControlToken(tokenId).then(function(isConfirmed) {
-					// 	assert.isTrue(isConfirmed);
+					// 	return artworkInstance.setupControlToken(expectedArtworkTokenId, controlTokenIds[1], controlTokenURIs[1],
+					// 		minValues[1], maxValues[1], startValues[1]
+					// 		).then(function(tx) {
+					// 		console.log(tx)
+					// 	});
 					// });
 				});
 			});
 		});
 	});
+
+	// it ("mints Hawking Artwork by multiple artist", function() {
+	//   	var artworkURI = "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa";	
+	//   	var controlTokenURIs = ["001.png", "002.png"];
+
+	// 	// generate the end indices
+	// 	var controlTokenURIEndIndex = 0;
+	// 	var controlTokenURIEndIndices = []; 
+	// 	for (var i = 0; i < controlTokenURIs.length; i++) {
+	// 	  controlTokenURIEndIndex += controlTokenURIs[i].length;    
+	// 	  controlTokenURIEndIndices.push(controlTokenURIEndIndex)    
+	// 	}
+
+	// 	var expectedArtworkTokenId = 3;
+	// 	var controlTokenArtists = [POV_ADDRESS, TEST_OWNER_ADDRESS];
+	// 	var numLeversPerControlToken = [5, 5];
+	// 	// X, Y, Rotation, Scale X, Scale Y
+	// 	var minValues = [0, 0, 0, 100, 100, 0, 0, 0, 100, 100];
+	// 	var maxValues = [2048, 2048, 359, 200, 200, 2048, 2048, 359, 200, 200];
+	// 	var startValues = [1024, 1024, 0, 100, 100, 1024, 1024, 0, 100, 100];  
+
+	// 	return artworkInstance.mintArtwork(expectedArtworkTokenId, artworkURI, controlTokenArtists,
+	// 		controlTokenURIs.join(""), controlTokenURIEndIndices, numLeversPerControlToken, 
+ //    		minValues, maxValues, startValues).then(function(tx) {
+    		
+ //    		return artworkInstance.totalSupply().then(function(supply) {
+	// 			console.log(supply.toString() + " total tokens")
+
+	// 			// the artwork token should NOT be confirmed since there are different artists for each control token
+	// 			return artworkInstance.isContainingArtworkConfirmed(expectedArtworkTokenId).then(function(isConfirmed) {
+	// 				assert.isFalse(isConfirmed);
+
+	// 				// var tokenId = expectedArtworkTokenId + 1;
+	// 				// console.log(tokenId);
+
+	// 				// // this token ID should be confirmed since it's the same as the minting POV artist
+	// 				// return artworkInstance.isConfirmedArtworkOrControlToken(tokenId).then(function(isConfirmed) {
+	// 				// 	assert.isTrue(isConfirmed);
+	// 				// });
+	// 			});
+	// 		});
+	// 	});
+	// });
 
 	// it ("mints Bees artwork", function() {
 	//   	var artworkURI = "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa";	
