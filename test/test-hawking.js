@@ -66,26 +66,32 @@ contract("AsyncArtwork", function(accounts) {
 			startValues.push([1024, 1024, 0, 100, 100]); // x y rotation scale_x scale_y	
 		}
 
-		return artworkInstance.mintArtwork(expectedArtworkTokenId, artworkURI, controlTokenArtists).then(function(tx) {
-    		
-    		return artworkInstance.totalSupply().then(function(supply) {
-				console.log(supply.toString() + " total tokens")
+		return artworkInstance.setArtistMintBalance(POV_ADDRESS, 100).then(function(tx) {
+			return artworkInstance.mintArtwork(expectedArtworkTokenId, artworkURI, controlTokenArtists).then(function(tx) {
+	    		
+	    		return artworkInstance.totalSupply().then(function(supply) {
+					console.log(supply.toString() + " total tokens")
 
-				// the artwork token should be confirmed since all the control artists are the same as the POV artist
-				return artworkInstance.isContainingArtworkConfirmed(expectedArtworkTokenId).then(function(isConfirmed) {
-					assert.isFalse(isConfirmed);				
+					// the artwork token should be confirmed since all the control artists are the same as the POV artist
+					return artworkInstance.isContainingArtworkConfirmed(expectedArtworkTokenId).then(function(isConfirmed) {
+						assert.isFalse(isConfirmed);				
 
-					return artworkInstance.setupControlToken(expectedArtworkTokenId, controlTokenIds[0], controlTokenURIs[0],
-						minValues[0], maxValues[0], startValues[0]).then(function(tx) {
+						return artworkInstance.setupControlToken(expectedArtworkTokenId, controlTokenIds[0], controlTokenURIs[0],
+							minValues[0], maxValues[0], startValues[0]).then(function(tx) {
 
-						return artworkInstance.isContainingArtworkConfirmed(expectedArtworkTokenId).then(function(isConfirmed) {
-							assert.isFalse(isConfirmed);
-							
-							return artworkInstance.setupControlToken(expectedArtworkTokenId, controlTokenIds[1], controlTokenURIs[1],
-								minValues[1], maxValues[1], startValues[1]).then(function(tx) {							
+							return artworkInstance.isContainingArtworkConfirmed(expectedArtworkTokenId).then(function(isConfirmed) {
+								assert.isFalse(isConfirmed);
+								
+								return artworkInstance.setupControlToken(expectedArtworkTokenId, controlTokenIds[1], controlTokenURIs[1],
+									minValues[1], maxValues[1], startValues[1]).then(function(tx) {							
 
-								return artworkInstance.isContainingArtworkConfirmed(expectedArtworkTokenId).then(function(isConfirmed) {
-									assert.isTrue(isConfirmed);
+									return artworkInstance.isContainingArtworkConfirmed(expectedArtworkTokenId).then(function(isConfirmed) {
+										assert.isTrue(isConfirmed);
+
+										return artworkInstance.getControlLeverValue(1, 0).then(function(controlLever) {
+											console.log(controlLever.toString());
+										});
+									});
 								});
 							});
 						});

@@ -8,6 +8,11 @@ contract AsyncArtwork is ERC721Full {
         address platformAddress
     );
 
+    event ArtistAddressUpdated (
+        uint256 tokenId,
+        address newArtistAddress
+    );
+
     // An event whenever royalty amounts are updated
     event RoyaltyAmountUpdated (
         uint256 newPlatformFirstSaleRoyaltyPercentage,
@@ -15,12 +20,8 @@ contract AsyncArtwork is ERC721Full {
         uint256 newArtistSecondaryRoyaltyPercentage
     );
 
-    event ControlTokenConfirmed (
-        uint256 controlTokenId
-    );
-
-    event ArtworkConfirmed (
-        uint256 artworkTokenId
+    event TokenConfirmed (
+        uint256 tokenId
     );
 
 	// An event whenever a bid is proposed
@@ -116,6 +117,11 @@ contract AsyncArtwork is ERC721Full {
     mapping (uint256 => bool) tokenDidHaveFirstSale;
     // only finalized artworks can be interacted with. All collaborating artists must confirm their token ID for a piece to finalize.
     mapping (uint256 => bool) tokenIsConfirmed;
+    // mapping of addresses that are allowed to control tokens on your behalf
+    mapping (address => address) public permissionedControllers;
+    
+    mapping (address => uint256) public artistMintBalances;
+
     // the percentage of sale that the platform gets on first sales
     uint256 public platformFirstSaleRoyaltyPercentage;
     // the percentage of sale that the platform gets on secondary sales
@@ -140,11 +146,26 @@ contract AsyncArtwork is ERC721Full {
         _;    
     }
 
+    // modifier to check if this artist is whitelisted and has a positive mint balance
+    modifier onlyWhitelistedArtist() {
+        // TODO check for whitelisted creator address
+        require(artistMintBalances[_msgSender()] > 0, "No mint balance remaining");
+        _;
+    }
+
     // Allows the current platform address to update to something different
     function updatePlatformAddress(address payable newPlatformAddress) public onlyPlatform {
         platformAddress = newPlatformAddress;
 
         emit PlatformAddressUpdated(newPlatformAddress);
+    }
+
+    function updateArtistAddress(uint256 tokenId, address payable newArtistAddress) public {
+        require(artistAddressMapping[tokenId] == _msgSender(), "Must be artist");
+
+        artistAddressMapping[tokenId] = newArtistAddress;
+
+        emit ArtistAddressUpdated(tokenId, newArtistAddress);
     }
 
     // Update the royalty percentages that platform and artists receive on first or secondary sales
@@ -159,13 +180,9 @@ contract AsyncArtwork is ERC721Full {
         // emit an event that contains the new royalty percentage values
         emit RoyaltyAmountUpdated(platformFirstSaleRoyaltyPercentage, platformSecondaryRoyaltyPercentage, artistSecondaryRoyaltyPercentage);
     }
-
-    // modifier to check if this artist is whitelisted and has a positive mint balance
-    modifier onlyWhitelistedArtist() {
-        // TODO check for whitelisted creator address
-        _;
+    function setArtistMintBalance(address artist, uint256 newBalance) public onlyPlatform {
+        artistMintBalances[artist] = newBalance;
     }
-
     // Returns whether an artwork token has been confirmed. If a control token is passed in, check for the containing 
     // artwork and return whether that has been confirmed
     function isContainingArtworkConfirmed(uint256 artworkOrControlTokenId) public view returns (bool) {
@@ -176,7 +193,6 @@ contract AsyncArtwork is ERC721Full {
             return tokenIsConfirmed[artworkOrControlTokenId];
         }
     }
-  	
     function setupControlToken(uint256 artworkTokenId, uint256 controlTokenId, string memory controlTokenURI,
             int256[] memory leverMinValues, 
             int256[] memory leverMaxValues,
@@ -187,7 +203,7 @@ contract AsyncArtwork is ERC721Full {
         // ensure that only the control token artist is attempting this mint
         require(artistAddressMapping[controlTokenId] == _msgSender(), "Must be control token artist");
         // ensure that this token is not confirmed yet
-        require (tokenIsConfirmed[controlTokenId] == false, "Art must not be confirmed");       
+        require (tokenIsConfirmed[controlTokenId] == false, "Already confirmed");       
         // enforce that the length of all the array lengths are equal
         require((leverMinValues.length == leverMaxValues.length) && (leverMaxValues.length == leverStartValues.length), "Values array mismatch");
         // set token URI
@@ -207,7 +223,7 @@ contract AsyncArtwork is ERC721Full {
         // confirm this token
         tokenIsConfirmed[controlTokenId] = true;
 
-        emit ControlTokenConfirmed(controlTokenId);
+        emit TokenConfirmed(controlTokenId);
 
         bool allControlTokensConfirmed = true;
         // for each control token id
@@ -221,11 +237,9 @@ contract AsyncArtwork is ERC721Full {
         if (allControlTokensConfirmed) {
             tokenIsConfirmed[artworkTokenId] = true;            
             
-            emit ArtworkConfirmed(artworkTokenId);
+            emit TokenConfirmed(artworkTokenId);
         }
     }
-
-
   	// Mint a piece of artwork. _msgSender() must be a whitelisted artist and have a positive mint balance 
     function mintArtwork(uint256 artworkTokenId, string memory artworkTokenURI, address payable[] memory controlTokenArtists
     ) public onlyWhitelistedArtist {
@@ -250,10 +264,13 @@ contract AsyncArtwork is ERC721Full {
             // track the control ids mapped to each artwork token id
             artworkControlTokensMapping[artworkTokenId].push(controlTokenId);
         }
+        // decrease the minting artist's balance by 1
+        artistMintBalances[_msgSender()] = artistMintBalances[_msgSender()].sub(1);
+
         if (controlTokenArtists.length == 0) {
             tokenIsConfirmed[artworkTokenId] = true;
 
-            emit ArtworkConfirmed(artworkTokenId);
+            emit TokenConfirmed(artworkTokenId);
         }
     }
 
@@ -279,7 +296,7 @@ contract AsyncArtwork is ERC721Full {
     // allows an address with a pending bid to withdraw it
     function withdrawBid(uint256 tokenId) public {
         // check that there is a bid from the sender to withdraw
-        require (((pendingBids[tokenId].exists) && (pendingBids[tokenId].bidder == _msgSender())), "No bid to withdraw");
+        require (((pendingBids[tokenId].exists) && (pendingBids[tokenId].bidder == _msgSender())), "No bid");
     	// Return bid amount back to bidder
         pendingBids[tokenId].bidder.transfer(pendingBids[tokenId].amount);
 		// clear highest bid
@@ -292,7 +309,6 @@ contract AsyncArtwork is ERC721Full {
         // the amount that the platform gets from this sale (depends on whether this is first sale or not)
         uint256 platformAmount = 0;
         uint256 hundred = 100;
-        
         // if the first sale already happened, then give the artist + platform the secondary royalty percentage
         if (tokenDidHaveFirstSale[tokenId]) {
             // mark down that this first sale occurred
@@ -322,13 +338,13 @@ contract AsyncArtwork is ERC721Full {
     // Buy the artwork for the currently set price
     function takeBuyPrice(uint256 tokenId) public payable {
         // don't let owners/approved buy their own tokens
-        require(_isApprovedOrOwner(_msgSender(), tokenId) == false, "Owners can't rebuy");
+        require(_isApprovedOrOwner(_msgSender(), tokenId) == false, "No rebuy");
         // get the sale amount
         uint256 saleAmount = buyPrices[tokenId];
         // check that there is a buy price
         require(saleAmount > 0, "No buy price");
         // check that the buyer sent enough to purchase
-        require (msg.value >= saleAmount, "Not enough sent");
+        require (msg.value == saleAmount, "Not enough sent");
     	// Return all highest bidder's money
         if (pendingBids[tokenId].exists) {
             // Return bid amount back to bidder
@@ -356,7 +372,7 @@ contract AsyncArtwork is ERC721Full {
 
     // Owner functions
     // Allow owner to accept the highest bid for a token
-    function acceptHighestBid(uint256 tokenId) public {
+    function acceptBid(uint256 tokenId) public {
     	// check if sender is owner/approved of token        
         require(_isApprovedOrOwner(_msgSender(), tokenId), "Owner only");
     	// check if there's a bid to accept
@@ -377,33 +393,30 @@ contract AsyncArtwork is ERC721Full {
     	emit BuyPriceSet(tokenId, amount);
     }
 
-    // used during the render process to determine values
-    function getControlLeverValue(uint256 controlTokenId, uint256 leverId) public view returns (int256) {
-        // check that a control token exists for this token id
-        require (controlTokenIdMapping[controlTokenId].exists, "No control token found");
+    // return the min, max, and current value of a control lever
+    function getControlLever(uint256 controlTokenId, uint256 leverId) public view returns (int256[] memory) {
+        int256[] memory lever = new int256[](3);
 
-        return controlTokenIdMapping[controlTokenId].levers[leverId].currentValue;
+        lever[0] = controlTokenIdMapping[controlTokenId].levers[leverId].minValue;
+        lever[1] = controlTokenIdMapping[controlTokenId].levers[leverId].maxValue;
+        lever[2] = controlTokenIdMapping[controlTokenId].levers[leverId].currentValue;
+
+        return lever;
     }
 
-    // used for token owners to know the range of values they can use for a control lever.
-    function getControlLeverMinMax(uint256 controlTokenId, uint256 leverId) public view returns (int256[] memory) {
-        // check that a control token exists for this token id
-        require (controlTokenIdMapping[controlTokenId].exists, "No control token found");
-
-        int256[] memory minMax = new int256[](2);
-
-        minMax[0] = controlTokenIdMapping[controlTokenId].levers[leverId].minValue;
-        minMax[1] = controlTokenIdMapping[controlTokenId].levers[leverId].maxValue;
-
-        return minMax;
+    function grantControlPermission(address permissioned) public {
+        permissionedControllers[_msgSender()] = permissioned;
     }
 
     // Allows owner of a control token to update its lever values
     function useControlToken(uint256 controlTokenId, uint256[] memory leverIds, int256[] memory newValues) public {
-        // check that a control token exists for this token id
-        require (controlTokenIdMapping[controlTokenId].exists, "No control token found");
-    	// check if sender is owner/approved of token        
-        require(_isApprovedOrOwner(_msgSender(), controlTokenId), "Owner only");
+        // // check that a control token exists for this token id
+        // require (controlTokenIdMapping[controlTokenId].exists, "No control token found");
+        // TODO test that trying to use an artwork token ID instead of control token fails
+
+    	// check if sender is owner/approved of token OR if they're a permissioned controller for the token owner      
+        require(_isApprovedOrOwner(_msgSender(), controlTokenId) || (permissionedControllers[ownerOf(controlTokenId)] == _msgSender()),
+            "Owner or permissioned only");
         // enforce that this artwork (or containing artwork if it's a control token) has been confirmed
         require(isContainingArtworkConfirmed(controlTokenId), "Art not confirmed");
  
