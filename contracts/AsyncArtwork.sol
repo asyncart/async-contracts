@@ -336,18 +336,22 @@ contract AsyncArtwork is ERC721Full {
             // clear highest bid
             pendingBids[tokenId] = PendingBid(address(0), 0, false);
         }        
-    	// Distribute percentage back to Artist(s) + Platform
+        onTokenSold(tokenId, saleAmount, _msgSender());
+    }
+
+    function onTokenSold(uint256 tokenId, uint256 saleAmount, address to) private {
+        // distribute the proceeds from the sale
         distributeProceedsFromSale(tokenId, saleAmount);
-    	// Transfer token to _msgSender()
-        safeTransferFrom(ownerOf(tokenId), _msgSender(), tokenId);
+        // Transfer token to _msgSender()
+        safeTransferFrom(ownerOf(tokenId), to, tokenId);
         // clear the approval for this token
         approve(address(0), tokenId);
-        // Emit event
-        emit TokenSale(_msgSender(), tokenId, saleAmount);
         // reset buy price
         buyPrices[tokenId] = 0;
         // clear highest bid
-        pendingBids[tokenId] = PendingBid(address(0), 0, false);    	
+        pendingBids[tokenId] = PendingBid(address(0), 0, false);
+        // Emit event
+        emit TokenSale(to, tokenId, saleAmount);
     }
 
     // Owner functions
@@ -357,23 +361,8 @@ contract AsyncArtwork is ERC721Full {
         require(_isApprovedOrOwner(_msgSender(), tokenId), "Owner only");
     	// check if there's a bid to accept
     	require (pendingBids[tokenId].exists, "No bid found");
-
-        // get the pending bid amount
-        uint256 saleAmount = pendingBids[tokenId].amount;
-
-        // distribute the proceeds from the sale
-        distributeProceedsFromSale(tokenId, saleAmount);
-
-        // transfer the token to the bidder address
-        safeTransferFrom(ownerOf(tokenId), pendingBids[tokenId].bidder, tokenId);
-        // clear the approval for this token
-        approve(address(0), tokenId);
-        // reset buy price
-    	buyPrices[tokenId] = 0;
-        // clear highest bid
-        pendingBids[tokenId] = PendingBid(address(0), 0, false);
-    	// Emit event
-        emit TokenSale(pendingBids[tokenId].bidder, tokenId, saleAmount);        
+        // process the sale
+        onTokenSold(tokenId, pendingBids[tokenId].amount, pendingBids[tokenId].bidder);
     }
 
     // Allows owner of a control token to set an immediate buy price. Set to 0 to reset.
