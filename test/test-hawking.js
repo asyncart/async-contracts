@@ -56,7 +56,7 @@ contract("AsyncArtwork", function(accounts) {
 
 		var controlTokenURIs = [];
 		for (var i = 0; i < numLayers; i++) {
-			controlTokenIds.push(i);
+			controlTokenIds.push(expectedArtworkTokenId + i + 1);
 			controlTokenURIs.push(i + ".png");
 
 			controlTokenArtists.push(POV_ADDRESS);
@@ -73,21 +73,23 @@ contract("AsyncArtwork", function(accounts) {
 
 				// the artwork token should be confirmed since all the control artists are the same as the POV artist
 				return artworkInstance.isContainingArtworkConfirmed(expectedArtworkTokenId).then(function(isConfirmed) {
-					assert.isFalse(isConfirmed);
+					assert.isFalse(isConfirmed);				
 
-					return artworkInstance.artworkControlTokensMapping(0, 0).then(function(tx) {
-						console.log(tx.toString());
-					})
-					// return artworkInstance.setupControlToken(expectedArtworkTokenId, controlTokenIds[0], controlTokenURIs[0],
-					// 	minValues[0], maxValues[0], startValues[0]).then(function(tx) {
-					// 	console.log(tx)
+					return artworkInstance.setupControlToken(expectedArtworkTokenId, controlTokenIds[0], controlTokenURIs[0],
+						minValues[0], maxValues[0], startValues[0]).then(function(tx) {
 
-					// 	return artworkInstance.setupControlToken(expectedArtworkTokenId, controlTokenIds[1], controlTokenURIs[1],
-					// 		minValues[1], maxValues[1], startValues[1]
-					// 		).then(function(tx) {
-					// 		console.log(tx)
-					// 	});
-					// });
+						return artworkInstance.isContainingArtworkConfirmed(expectedArtworkTokenId).then(function(isConfirmed) {
+							assert.isFalse(isConfirmed);
+							
+							return artworkInstance.setupControlToken(expectedArtworkTokenId, controlTokenIds[1], controlTokenURIs[1],
+								minValues[1], maxValues[1], startValues[1]).then(function(tx) {							
+
+								return artworkInstance.isContainingArtworkConfirmed(expectedArtworkTokenId).then(function(isConfirmed) {
+									assert.isTrue(isConfirmed);
+								});
+							});
+						});
+					});
 				});
 			});
 		});

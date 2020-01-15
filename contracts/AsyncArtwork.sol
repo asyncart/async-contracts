@@ -182,13 +182,14 @@ contract AsyncArtwork is ERC721Full {
             int256[] memory leverMaxValues,
             int256[] memory leverStartValues
         ) public onlyWhitelistedArtist {
+        // check that a control token exists for this token id
+        require (controlTokenIdMapping[controlTokenId].exists, "No control token found");
         // ensure that only the control token artist is attempting this mint
         require(artistAddressMapping[controlTokenId] == _msgSender(), "Must be control token artist");
         // ensure that this token is not confirmed yet
         require (tokenIsConfirmed[controlTokenId] == false, "Art must not be confirmed");       
         // enforce that the length of all the array lengths are equal
-        require((leverMinValues.length == leverMaxValues.length) && (leverMaxValues.length == leverStartValues.length), 
-            "Min, max, start mismatch");
+        require((leverMinValues.length == leverMaxValues.length) && (leverMaxValues.length == leverStartValues.length), "Values array mismatch");
         // set token URI
         super._setTokenURI(controlTokenId, controlTokenURI);        
         // create the control token
@@ -240,6 +241,8 @@ contract AsyncArtwork is ERC721Full {
         for (uint256 i = 0; i < controlTokenArtists.length; i++) {
             // use the curren token supply as the next token id
             uint256 controlTokenId = totalSupply();
+            // stub in an existing control token so exists is true
+            controlTokenIdMapping[controlTokenId] = ControlToken(artworkTokenId, 0, true);
             // map the provided control token artist to its control token ID
             artistAddressMapping[controlTokenId] = controlTokenArtists[i];            
             // mint the control token
