@@ -88,7 +88,7 @@ contract("AsyncArtwork", function(accounts) {
 									return artworkInstance.isContainingArtworkConfirmed(expectedArtworkTokenId).then(function(isConfirmed) {
 										assert.isTrue(isConfirmed);
 
-										return artworkInstance.getControlLeverValue(1, 0).then(function(controlLever) {
+										return artworkInstance.getControlLever(1, 0).then(function(controlLever) {
 											console.log(controlLever.toString());
 										});
 									});

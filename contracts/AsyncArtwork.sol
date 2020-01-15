@@ -71,12 +71,12 @@ contract AsyncArtwork is ERC721Full {
     struct ControlToken {
         // the containing artwork token that this control token belongs to
         uint256 containingArtworkTokenId;
-        // the levers that this control token can use
-        mapping (uint256 => ControlLever) levers;
         // number that tracks how many levers there are
         uint256 numControlLevers;
         // false by default, true once instantiated
         bool exists;
+        // the levers that this control token can use
+        mapping (uint256 => ControlLever) levers;                
     }
 
     // struct for a lever on a control token that can be changed
@@ -102,7 +102,7 @@ contract AsyncArtwork is ERC721Full {
 	}
     
     // map an artwork token id to the number of control tokens it contains
-    mapping (uint256 => uint256) public numControlTokensMapping;
+    // mapping (uint256 => uint256) public numControlTokensMapping;
     // map an artwork token id to an array of its control token ids
     mapping (uint256 => uint256[]) public artworkControlTokensMapping;
     // map a control token id to a control token struct
@@ -205,7 +205,8 @@ contract AsyncArtwork is ERC721Full {
         // ensure that this token is not confirmed yet
         require (tokenIsConfirmed[controlTokenId] == false, "Already confirmed");       
         // enforce that the length of all the array lengths are equal
-        require((leverMinValues.length == leverMaxValues.length) && (leverMaxValues.length == leverStartValues.length), "Values array mismatch");
+        // require((leverMinValues.length == leverMaxValues.length) && (leverMaxValues.length == leverStartValues.length), "Values array mismatch");
+        // TODO test that it's okay if you provide different start values array from min/max arrays. should still fail from below require
         // set token URI
         super._setTokenURI(controlTokenId, controlTokenURI);        
         // create the control token
@@ -227,7 +228,7 @@ contract AsyncArtwork is ERC721Full {
 
         bool allControlTokensConfirmed = true;
         // for each control token id
-        for (uint256 k = 0; k < numControlTokensMapping[artworkTokenId]; k++) {
+        for (uint256 k = 0; k < artworkControlTokensMapping[artworkTokenId].length; k++) {
             if (tokenIsConfirmed[artworkControlTokensMapping[artworkTokenId][k]] == false) {
                 allControlTokensConfirmed = false;
                 break;
@@ -248,7 +249,7 @@ contract AsyncArtwork is ERC721Full {
         super._safeMint(_msgSender(), artworkTokenId);
         super._setTokenURI(artworkTokenId, artworkTokenURI);
         // track the number of control tokens that each artwork contains
-        numControlTokensMapping[artworkTokenId] = controlTokenArtists.length;
+        // numControlTokensMapping[artworkTokenId] = controlTokenArtists.length;
         // track the _msgSender() address as the artist address for future royalties
         artistAddressMapping[artworkTokenId] = _msgSender();
         // iterate through all control token URIs (1 for each control token)
@@ -292,7 +293,6 @@ contract AsyncArtwork is ERC721Full {
     	// Emit event for the bid proposal
     	emit BidProposed(_msgSender(), tokenId, msg.value);
     }
-
     // allows an address with a pending bid to withdraw it
     function withdrawBid(uint256 tokenId) public {
         // check that there is a bid from the sender to withdraw
@@ -304,7 +304,6 @@ contract AsyncArtwork is ERC721Full {
 		// emit an event when the highest bid is withdrawn
 		emit BidWithdrawn(_msgSender(), tokenId);
     }
-
     function distributeProceedsFromSale(uint256 tokenId, uint256 saleAmount) private {
         // the amount that the platform gets from this sale (depends on whether this is first sale or not)
         uint256 platformAmount = 0;
@@ -403,12 +402,12 @@ contract AsyncArtwork is ERC721Full {
 
         return lever;
     }
-
+    // anyone can grant permission to another address to control tokens on their behalf. Set to Address(0) to reset.
     function grantControlPermission(address permissioned) public {
         permissionedControllers[_msgSender()] = permissioned;
     }
 
-    // Allows owner of a control token to update its lever values
+    // Allows owner (or permissioned user) of a control token to update its lever values
     function useControlToken(uint256 controlTokenId, uint256[] memory leverIds, int256[] memory newValues) public {
         // // check that a control token exists for this token id
         // require (controlTokenIdMapping[controlTokenId].exists, "No control token found");
