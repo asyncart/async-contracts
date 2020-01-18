@@ -50,3 +50,4 @@ contracts/build/
 contracts/README.md
 
 package-lock.json
+deploy_goerli.sh

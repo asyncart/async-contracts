@@ -62,6 +62,9 @@ module.exports = async function(deployer) {
   // var artworkInstance = await DeployArtwork(deployer, "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa", 
   //     title, symbol, controlTokenURIEndIndices, controlTokenURIs.join(""), 
   //     numLeversPerControlToken, leverIds, minValues, maxValues, startValues);
+
+  console.log("AsyncArtwork bytecode size: ", AsyncArtwork.deployedBytecode.length);
+  
   await deployer.deploy(AsyncArtwork, title, symbol)  
 
   console.log("Done")
