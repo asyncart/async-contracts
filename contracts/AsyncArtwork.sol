@@ -102,7 +102,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     // map an artwork token id to an array of its control token ids
     mapping (uint256 => uint256[]) public artworkControlTokensMapping;
     // map a control token id to a control token struct
-    mapping (uint256 => ControlToken) public controlTokenIdMapping;
+    mapping (uint256 => ControlToken) controlTokenIdMapping;
     // map an artwork token id to the artist address (for royalties)
     mapping (uint256 => address payable) public artistAddressMapping;
     // map control token ID to its buy price
@@ -112,9 +112,9 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     // track whether this token was sold the first time or not (used for determining whether to use first or secondary sale percentage)
     mapping (uint256 => bool) tokenDidHaveFirstSale;
     // only finalized artworks can be interacted with. All collaborating artists must confirm their token ID for a piece to finalize.
-    mapping (uint256 => bool) tokenIsConfirmed;
+    mapping (uint256 => bool) public tokenIsConfirmed;
     // mapping of addresses that are allowed to control tokens on your behalf
-    mapping (address => address) public permissionedControllers;
+    mapping (address => address) permissionedControllers;
     // the percentage of sale that the platform gets on first sales
     uint256 public platformFirstSalePercentage;
     // the percentage of sale that the platform gets on secondary sales
@@ -181,6 +181,8 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
             int256[] memory leverMaxValues,
             int256[] memory leverStartValues
         ) public {
+        // TODO enforce that artworkTokenId is correct!
+
         // check that a control token exists for this token id
         require (controlTokenIdMapping[controlTokenId].exists, "No control token found");
         // ensure that only the control token artist is attempting this mint
