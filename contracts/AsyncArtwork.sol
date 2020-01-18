@@ -45,12 +45,12 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
 
     // An event when a token has been sold 
     event TokenSale (
+        // the id of the token
+        uint256 tokenId,
+        // the price that the token was sold for
+        uint256 salePrice,
     	// the address of the buyer
-    	address buyer,
-    	// the id of the token
-    	uint256 tokenId,
-    	// the price that the token was sold for
-    	uint256 salePrice
+    	address buyer    	
     );
 
     // An event whenever a control token has been updated
@@ -115,9 +115,6 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     mapping (uint256 => bool) tokenIsConfirmed;
     // mapping of addresses that are allowed to control tokens on your behalf
     mapping (address => address) public permissionedControllers;
-    
-    // mapping (address => uint256) public artistMintBalances;
-
     // the percentage of sale that the platform gets on first sales
     uint256 public platformFirstSalePercentage;
     // the percentage of sale that the platform gets on secondary sales
@@ -138,16 +135,9 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
 
     // modifier for only allowing the platform to make a call
     modifier onlyPlatform() {
-        require(msg.sender == platformAddress, "Only platform");
+        require(msg.sender == platformAddress);
         _;    
     }
-
-    // modifier to check if this artist is whitelisted and has a positive mint balance
-    // modifier onlyWhitelistedArtist() {
-    //     // TODO check for whitelisted creator address
-    //     require(artistMintBalances[msg.sender] > 0, "No mint balance remaining");
-    //     _;
-    // }
 
     // Allows the current platform address to update to something different
     function updatePlatformAddress(address payable newPlatformAddress) public onlyPlatform {
@@ -157,7 +147,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     }
 
     function updateArtistAddress(uint256 tokenId, address payable newArtistAddress) public {
-        require(artistAddressMapping[tokenId] == msg.sender, "Must be artist");
+        require(artistAddressMapping[tokenId] == msg.sender);
 
         artistAddressMapping[tokenId] = newArtistAddress;
 
@@ -176,9 +166,6 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         // emit an event that contains the new royalty percentage values
         emit RoyaltyAmountUpdated(platformFirstSalePercentage, platformSecondSalePercentage, artistSecondSalePercentage);
     }
-    // function setArtistMintBalance(address artist, uint256 newBalance) public onlyPlatform {
-    //     artistMintBalances[artist] = newBalance;
-    // }
     // Returns whether an artwork token has been confirmed. If a control token is passed in, check for the containing 
     // artwork and return whether that has been confirmed
     function isContainingArtworkConfirmed(uint256 artworkOrControlTokenId) public view returns (bool) {
@@ -258,9 +245,6 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
             // track the control ids mapped to each artwork token id
             artworkControlTokensMapping[artworkTokenId].push(controlTokenId);
         }
-        // decrease the minting artist's balance by 1
-        // artistMintBalances[msg.sender] = artistMintBalances[msg.sender].sub(1);
-
         if (controlTokenArtists.length == 0) {
             tokenIsConfirmed[artworkTokenId] = true;
 
@@ -270,7 +254,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     // Bidder functions
     function bid(uint256 tokenId) public payable {
     	// don't let owners/approved bid on their own tokens
-        require(_isApprovedOrOwner(msg.sender, tokenId) == false, "Owners cant rebuy");
+        require(_isApprovedOrOwner(msg.sender, tokenId) == false);
         // enforce that this artwork (or containing artwork if it's a control token) has been confirmed
         require(isContainingArtworkConfirmed(tokenId), "Art not confirmed");
     	// check if there's a high bid
@@ -288,7 +272,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     // allows an address with a pending bid to withdraw it
     function withdrawBid(uint256 tokenId) public {
         // check that there is a bid from the sender to withdraw
-        require (((pendingBids[tokenId].exists) && (pendingBids[tokenId].bidder == msg.sender)), "No bid");
+        require (pendingBids[tokenId].exists && (pendingBids[tokenId].bidder == msg.sender));
     	// Return bid amount back to bidder
         pendingBids[tokenId].bidder.transfer(pendingBids[tokenId].amount);
 		// clear highest bid
@@ -296,9 +280,30 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
 		// emit an event when the highest bid is withdrawn
 		emit BidWithdrawn(tokenId);
     }
-    function distributeProceedsFromSale(uint256 tokenId, uint256 saleAmount) private {
+    // Buy the artwork for the currently set price
+    function takeBuyPrice(uint256 tokenId) public payable {
+        // don't let owners/approved buy their own tokens
+        require(_isApprovedOrOwner(msg.sender, tokenId) == false);
+        // get the sale amount
+        uint256 saleAmount = buyPrices[tokenId];
+        // check that there is a buy price
+        require(saleAmount > 0);
+        // check that the buyer sent enough to purchase
+        require (msg.value >= saleAmount);
+    	// Return all highest bidder's money
+        if (pendingBids[tokenId].exists) {
+            // Return bid amount back to bidder
+            pendingBids[tokenId].bidder.transfer(pendingBids[tokenId].amount);
+            // clear highest bid
+            pendingBids[tokenId] = PendingBid(address(0), 0, false);
+        }        
+        onTokenSold(tokenId, saleAmount, msg.sender);
+    }
+
+    function onTokenSold(uint256 tokenId, uint256 saleAmount, address to) private {
+        // distribute the proceeds from the sale
         // the amount that the platform gets from this sale (depends on whether this is first sale or not)
-        uint256 platformAmount = 0;
+        uint256 platformAmount;
         uint256 hundred = 100;
         // if the first sale already happened, then give the artist + platform the secondary royalty percentage
         if (tokenDidHaveFirstSale[tokenId]) {
@@ -324,31 +329,6 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         address payable payableOwner = address(uint160(ownerOf(tokenId)));
         // transfer the remaining amount to the owner of the token
         payableOwner.transfer(saleAmount);
-    }
-
-    // Buy the artwork for the currently set price
-    function takeBuyPrice(uint256 tokenId) public payable {
-        // don't let owners/approved buy their own tokens
-        require(_isApprovedOrOwner(msg.sender, tokenId) == false, "No rebuy");
-        // get the sale amount
-        uint256 saleAmount = buyPrices[tokenId];
-        // check that there is a buy price
-        require(saleAmount > 0, "No buy price");
-        // check that the buyer sent enough to purchase
-        require (msg.value == saleAmount, "Not enough sent");
-    	// Return all highest bidder's money
-        if (pendingBids[tokenId].exists) {
-            // Return bid amount back to bidder
-            pendingBids[tokenId].bidder.transfer(pendingBids[tokenId].amount);
-            // clear highest bid
-            pendingBids[tokenId] = PendingBid(address(0), 0, false);
-        }        
-        onTokenSold(tokenId, saleAmount, msg.sender);
-    }
-
-    function onTokenSold(uint256 tokenId, uint256 saleAmount, address to) private {
-        // distribute the proceeds from the sale
-        distributeProceedsFromSale(tokenId, saleAmount);
         // Transfer token to msg.sender
         safeTransferFrom(ownerOf(tokenId), to, tokenId);
         // clear the approval for this token
@@ -358,16 +338,16 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         // clear highest bid
         pendingBids[tokenId] = PendingBid(address(0), 0, false);
         // Emit event
-        emit TokenSale(to, tokenId, saleAmount);
+        emit TokenSale(tokenId, saleAmount, to);
     }
 
     // Owner functions
     // Allow owner to accept the highest bid for a token
     function acceptBid(uint256 tokenId) public {
     	// check if sender is owner/approved of token        
-        require(_isApprovedOrOwner(msg.sender, tokenId), "Owner only");
+        require(_isApprovedOrOwner(msg.sender, tokenId));
     	// check if there's a bid to accept
-    	require (pendingBids[tokenId].exists, "No bid found");
+    	require (pendingBids[tokenId].exists);
         // process the sale
         onTokenSold(tokenId, pendingBids[tokenId].amount, pendingBids[tokenId].bidder);
     }
@@ -375,7 +355,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     // Allows owner of a control token to set an immediate buy price. Set to 0 to reset.
     function makeBuyPrice(uint256 tokenId, uint256 amount) public {
     	// check if sender is owner/approved of token        
-    	require(_isApprovedOrOwner(msg.sender, tokenId), "Owner only");
+    	require(_isApprovedOrOwner(msg.sender, tokenId));
         // enforce that this artwork (or containing artwork if it's a control token) has been confirmed
         require(isContainingArtworkConfirmed(tokenId), "Art not confirmed");
     	// set the buy price
@@ -401,10 +381,6 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
 
     // Allows owner (or permissioned user) of a control token to update its lever values
     function useControlToken(uint256 controlTokenId, uint256[] memory leverIds, int256[] memory newValues) public {
-        // // check that a control token exists for this token id
-        // require (controlTokenIdMapping[controlTokenId].exists, "No control token found");
-        // TODO test that trying to use an artwork token ID instead of control token fails
-
     	// check if sender is owner/approved of token OR if they're a permissioned controller for the token owner      
         require(_isApprovedOrOwner(msg.sender, controlTokenId) || (permissionedControllers[ownerOf(controlTokenId)] == msg.sender),
             "Owner or permissioned only");
