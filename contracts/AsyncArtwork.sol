@@ -367,14 +367,27 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     }
 
     // return the min, max, and current value of a control lever
-    function getControlLever(uint256 controlTokenId, uint256 leverId) public view returns (int256[] memory) {
-        int256[] memory lever = new int256[](3);
+    function getControlToken(uint256 controlTokenId) public view returns (int256[] memory) {
+        require(controlTokenIdMapping[controlTokenId].exists);
+        
+        ControlToken storage controlToken = controlTokenIdMapping[controlTokenId];
 
-        lever[0] = controlTokenIdMapping[controlTokenId].levers[leverId].minValue;
-        lever[1] = controlTokenIdMapping[controlTokenId].levers[leverId].maxValue;
-        lever[2] = controlTokenIdMapping[controlTokenId].levers[leverId].currentValue;
+        int256[] memory returnValues = new int256[](controlToken.numControlLevers.mul(3));
+        uint256 returnValIndex = 0;
 
-        return lever;
+        // iterate through all the control levers for this control token
+        for (uint256 i = 0; i < controlToken.numControlLevers; i++) {        
+            returnValues[returnValIndex] = controlToken.levers[i].minValue;
+            returnValIndex = returnValIndex.add(1);
+
+            returnValues[returnValIndex] = controlToken.levers[i].maxValue;
+            returnValIndex = returnValIndex.add(1);
+
+            returnValues[returnValIndex] = controlToken.levers[i].currentValue; 
+            returnValIndex = returnValIndex.add(1);
+        }        
+
+        return returnValues;
     }
     // anyone can grant permission to another address to control tokens on their behalf. Set to Address(0) to reset.
     function grantControlPermission(address permissioned) public {
