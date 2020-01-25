@@ -4,14 +4,13 @@ const truffleAssert = require('truffle-assertions');
 contract("AsyncArtwork", function(accounts) {
 	var artworkInstance;
 
-	const POV_ADDRESS = "0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05"
+	// POV Address
+	const ARTIST_A = "0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05";
+	const ARTIST_B = "0xaa60e4BC5f613C3d51f6b7e6EF174B18a944fada"
+	const ARTIST_C = "0xe1DB628f388557B775e49A757288b81D619F08C0"
 
 	const COLLECTOR_A = "0x23e3161ec6f55B9474c6B264ab4a46c149912344"
 	const COLLECTOR_B = "0xab40Aa5942182288E280e166F46B683CF1FAb1A5"
-
-	const ARTIST_A = POV_ADDRESS;
-	const ARTIST_B = "0xaa60e4BC5f613C3d51f6b7e6EF174B18a944fada"
-	const ARTIST_C = "0xe1DB628f388557B775e49A757288b81D619F08C0"
 
 
 	it ("initializes contract", function() {
@@ -20,7 +19,7 @@ contract("AsyncArtwork", function(accounts) {
 		});
 	});
 
-	it ("mints Hawking Artwork by single artist", function() {
+	it ("mints Hawking by artist A", function() {
 	  	var artworkURI = "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa";		  	
 
 		var expectedArtworkTokenId = 0;
@@ -51,7 +50,7 @@ contract("AsyncArtwork", function(accounts) {
 				// should be total layers count plus 1 for the base
 				assert(totalSupply == artistLayers.length + 1, "Wrong token count")
 
-				return artworkInstance.whitelistedCreators(POV_ADDRESS).then(function(isWhitelisted) {
+				return artworkInstance.whitelistedCreators(ARTIST_A).then(function(isWhitelisted) {
 					assert(isWhitelisted, "Should be whitelisted")
 
 					return artworkInstance.whitelistedCreators(COLLECTOR_A).then(function(isWhitelisted) {
@@ -120,7 +119,7 @@ contract("AsyncArtwork", function(accounts) {
 	});
 
 
-	it ("tests a revert bid from an owner", async function() {		
+	it ("expects a REVERT bid from artist A", async function() {		
 		const BID_AMOUNT_ETHER = 0.1;
 
 		await truffleAssert.reverts(artworkInstance.bid(0, {
@@ -128,32 +127,23 @@ contract("AsyncArtwork", function(accounts) {
 		}));
 	});
 
-	it ("tests a bid from a collector", async function() {		
+	it ("tests a bid from a collector A", async function() {		
 		const TOKEN_ID = 1;
 
 		const BID_AMOUNT_ETHER = 0.1;
-
-		// var collectorBalanceBefore = await web3.eth.getBalance(COLLECTOR_A);
 
 		await artworkInstance.bid(TOKEN_ID, {
 			value: web3.utils.toWei(BID_AMOUNT_ETHER.toString(), 'ether'),
 			from : COLLECTOR_A
 		});
 
-		// var collectorBalanceAfter = await web3.eth.getBalance(COLLECTOR_A);
-
-		// var collectorBalanceDifference = collectorBalanceAfter - collectorBalanceBefore;
-		
-		// console.log(web3.utils.fromWei(collectorBalanceDifference.toString(), 'ether'));
-
+		// asser that pending bid has correct bidder and amount
 		var pendingBid = await artworkInstance.pendingBids(TOKEN_ID)
-
 		assert.equal(pendingBid.bidder, COLLECTOR_A);
-
 		assert.equal(web3.utils.fromWei(pendingBid.amount.toString(), 'ether'), BID_AMOUNT_ETHER);
 	});
 
-	it ("tests a bid that's too low", async function() {		
+	it ("tests a bid from Collector B that's too low", async function() {		
 		const TOKEN_ID = 1;
 
 		const BID_AMOUNT_ETHER = 0.05;
@@ -164,7 +154,7 @@ contract("AsyncArtwork", function(accounts) {
 		}));
 	});
 
-	it ("tests a bid that's equal to current", async function() {		
+	it ("tests a bid from Collector B that's equal to current", async function() {		
 		const TOKEN_ID = 1;
 
 		const BID_AMOUNT_ETHER = 0.1;
@@ -176,7 +166,7 @@ contract("AsyncArtwork", function(accounts) {
 		}));
 	});
 
-	it ("tests a higher bid from same collector", async function() {		
+	it ("tests a higher bid from same collector A", async function() {		
 		const TOKEN_ID = 1;
 
 		const PREVIOUS_BID_AMOUNT = 0.1;
@@ -206,7 +196,33 @@ contract("AsyncArtwork", function(accounts) {
 		assert.equal(web3.utils.fromWei(pendingBid.amount.toString(), 'ether'), BID_AMOUNT_ETHER);
 	});
 
-	// it ("mints Hawking Artwork by multiple artist", function() {
+	it ("tests a higher bid from collector B", async function() {		
+		const TOKEN_ID = 1;
+
+		const PREVIOUS_BID_AMOUNT = 0.15;
+		const BID_AMOUNT_ETHER = 0.16;
+
+		var collectorABalanceBefore = await web3.eth.getBalance(COLLECTOR_A);
+
+		var tx = await artworkInstance.bid(TOKEN_ID, {
+			value: web3.utils.toWei(BID_AMOUNT_ETHER.toString(), 'ether'),
+			from : COLLECTOR_B
+		});
+
+		var collectorABalanceAfter = await web3.eth.getBalance(COLLECTOR_A);
+
+		// since collectorA gets their previous bid back, their difference should be increased by the amount of the previous bid
+		var collectorABalanceDifference = web3.utils.fromWei((collectorABalanceAfter - collectorABalanceBefore).toString(), 'ether');
+		assert.equal(collectorABalanceDifference, PREVIOUS_BID_AMOUNT);
+		
+		// check that the new pending bid reflects the bid amount
+		var pendingBid = await artworkInstance.pendingBids(TOKEN_ID)
+		assert.equal(pendingBid.bidder, COLLECTOR_B);
+		assert.equal(web3.utils.fromWei(pendingBid.amount.toString(), 'ether'), BID_AMOUNT_ETHER);
+	});
+});
+
+// it ("mints Hawking Artwork by multiple artist", function() {
 	//   	var artworkURI = "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa";	
 	//   	var controlTokenURIs = ["001.png", "002.png"];
 
@@ -315,4 +331,3 @@ contract("AsyncArtwork", function(accounts) {
 	// 		});
 	// 	});
 	// });
-});
