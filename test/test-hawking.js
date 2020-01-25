@@ -12,6 +12,8 @@ contract("AsyncArtwork", function(accounts) {
 	const COLLECTOR_A = "0x23e3161ec6f55B9474c6B264ab4a46c149912344"
 	const COLLECTOR_B = "0xab40Aa5942182288E280e166F46B683CF1FAb1A5"
 
+	const NEW_PLATFORM_ADDRESS = "0xD024C0CFE9881da3998C78B1Eccd56b75ccC3Ec8";
+
 
 	it ("initializes contract", function() {
 		return AsyncArtwork.deployed().then(function(instance) {
@@ -196,7 +198,7 @@ contract("AsyncArtwork", function(accounts) {
 		assert.equal(web3.utils.fromWei(pendingBid.amount.toString(), 'ether'), BID_AMOUNT_ETHER);
 	});
 
-	it ("tests a higher bid from collector B", async function() {		
+	it ("tests a higher bid from collector B (returning collector A's previous bid)", async function() {
 		const TOKEN_ID = 1;
 
 		const PREVIOUS_BID_AMOUNT = 0.15;
@@ -220,6 +222,22 @@ contract("AsyncArtwork", function(accounts) {
 		assert.equal(pendingBid.bidder, COLLECTOR_B);
 		assert.equal(web3.utils.fromWei(pendingBid.amount.toString(), 'ether'), BID_AMOUNT_ETHER);
 	});
+
+	it ("tests transferring platform ownership to a new owner", async function() {
+		var platformOwner = await artworkInstance.platformAddress();
+
+		assert.equal(platformOwner, ARTIST_A);
+
+		await artworkInstance.updatePlatformAddress(NEW_PLATFORM_ADDRESS);
+
+		platformOwner = await artworkInstance.platformAddress();
+
+		assert.equal(platformOwner, NEW_PLATFORM_ADDRESS);
+	});
+	// TODO test artist accepting bid on base token (check that royalty is split amongst unique token creators and platform)
+	// TODO test Collector C bidding on base token
+	// TODO test Collector B accepting. (royalty should be split but lower %).
+
 });
 
 // it ("mints Hawking Artwork by multiple artist", function() {

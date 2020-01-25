@@ -116,7 +116,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     // the percentage of sale that an artist gets on secondary sales
     uint256 public artistSecondSalePercentage;
     // the address of the platform (for receving commissions and royalties)
-    address payable private platformAddress;
+    address payable public platformAddress;
 
 	constructor (string memory name, string memory symbol) public ERC721Metadata(name, symbol) {
 		// starting royalty amounts
