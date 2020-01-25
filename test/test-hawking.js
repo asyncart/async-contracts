@@ -226,15 +226,11 @@ contract("AsyncArtwork", function(accounts) {
 	});
 
 	it ("tests transferring platform ownership to a new owner", async function() {
-		var platformOwner = await artworkInstance.platformAddress();
-
-		assert.equal(platformOwner, ARTIST_A);
+		assert.equal(await artworkInstance.platformAddress(), ARTIST_A);
 
 		await artworkInstance.updatePlatformAddress(NEW_PLATFORM_ADDRESS);
 
-		platformOwner = await artworkInstance.platformAddress();
-
-		assert.equal(platformOwner, NEW_PLATFORM_ADDRESS);
+		assert.equal(await artworkInstance.platformAddress(), NEW_PLATFORM_ADDRESS);
 	});
 
 	it ("attempts to accept bid when not the owner", async function() {	
@@ -254,15 +250,22 @@ contract("AsyncArtwork", function(accounts) {
 	it ("Artist A accepts a current high bid from Collector B", async function() {	
 		const TOKEN_ID = 1;
 
-		var currentOwner = await artworkInstance.ownerOf(TOKEN_ID);
+		// var platformBalanceBefore = await web3.eth.getBalance(NEW_PLATFORM_ADDRESS);
+		// console.log(web3.utils.fromWei(platformBalanceBefore.toString(), 'ether'));
 
-		assert.equal(currentOwner, ARTIST_A)
+		assert.isFalse(await artworkInstance.tokenDidHaveFirstSale(TOKEN_ID));
+		assert.equal(await artworkInstance.ownerOf(TOKEN_ID), ARTIST_A)
 
-		await artworkInstance.acceptBid(TOKEN_ID);
+		var tx = await artworkInstance.acceptBid(TOKEN_ID);
 
-		currentOwner = await artworkInstance.ownerOf(TOKEN_ID);
+		// var platformBalanceAfter = await web3.eth.getBalance(NEW_PLATFORM_ADDRESS);
+		// console.log(web3.utils.fromWei(platformBalanceAfter.toString(), 'ether'));
 
-		assert.equal(currentOwner, COLLECTOR_B)
+		assert.isTrue(await artworkInstance.tokenDidHaveFirstSale(TOKEN_ID));
+		assert.equal(await artworkInstance.ownerOf(TOKEN_ID), COLLECTOR_B)
+
+		// first sale, so platform should have gotten 10% of the pending bid
+		// Artist A, B, C should all have equally split the sale amount (minus royalty)
 	});
 	// TODO test artist accepting bid on base token (check that royalty is split amongst unique token creators and platform)
 	// TODO test Collector C bidding on base token

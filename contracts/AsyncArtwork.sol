@@ -320,6 +320,8 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         } else {
             // else if this is the first sale for the token, give the platform the first sale royalty percentage
             platformAmount = hundred.sub(platformFirstSalePercentage).div(hundred).mul(saleAmount);
+            // give platform its royalty
+            platformAddress.transfer(platformAmount);
             // deduct the platform amount from the payment amount
             saleAmount = saleAmount.sub(platformAmount);
             // this is a token first sale, so distribute the funds to the unique token creators of this token
