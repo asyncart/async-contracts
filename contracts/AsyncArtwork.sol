@@ -93,7 +93,8 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
 		// false by default, true once instantiated
 		bool exists;
 	}
-    
+
+	mapping (address => bool) public whitelistedCreators;    
 
     mapping (uint256 => address payable[]) uniqueTokenCreators;
     // map a control token id to a control token struct
@@ -118,18 +119,31 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     address payable private platformAddress;
 
 	constructor (string memory name, string memory symbol) public ERC721Metadata(name, symbol) {
+		// starting royalty amounts
         platformFirstSalePercentage = 10;
         platformSecondSalePercentage = 1;
         artistSecondSalePercentage = 3;
 
         // by default, the platformAddress is the address that mints this contract
         platformAddress = msg.sender;
+
+        // by default, platform is whitelisted
+        updateWhitelist(platformAddress, true);
   	}
 
     // modifier for only allowing the platform to make a call
     modifier onlyPlatform() {
         require(msg.sender == platformAddress);
         _;    
+    }
+
+    modifier onlyWhitelistedCreator() { 
+    	require(whitelistedCreators[msg.sender] == true);
+    	_; 
+    }
+    
+    function updateWhitelist(address creator, bool state) public onlyPlatform {
+    	whitelistedCreators[creator] = state;
     }
 
     // Allows the current platform address to update to something different
@@ -187,7 +201,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         emit TokenConfirmed(controlTokenId);
     }
     function mintArtwork(uint256 artworkTokenId, string memory artworkTokenURI, address payable[] memory controlTokenArtists
-    ) public onlyPlatform {
+    ) public onlyWhitelistedCreator {
         require (artworkTokenId == totalSupply(), "TotalSupply different");
         // Mint the token that represents ownership of the entire artwork    
         super._safeMint(msg.sender, artworkTokenId);
