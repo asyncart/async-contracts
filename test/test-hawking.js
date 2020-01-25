@@ -249,23 +249,31 @@ contract("AsyncArtwork", function(accounts) {
 
 	it ("Artist A accepts a current high bid from Collector B", async function() {	
 		const TOKEN_ID = 1;
-
-		// var platformBalanceBefore = await web3.eth.getBalance(NEW_PLATFORM_ADDRESS);
-		// console.log(web3.utils.fromWei(platformBalanceBefore.toString(), 'ether'));
-
+		
+		// get the pending bid amount
+		var pendingBidAmount = (await artworkInstance.pendingBids(TOKEN_ID)).amount;
+		// get the platform's balance before 
+		var platformBalanceBefore = await web3.eth.getBalance(NEW_PLATFORM_ADDRESS);
+		// assert ownership
 		assert.isFalse(await artworkInstance.tokenDidHaveFirstSale(TOKEN_ID));
 		assert.equal(await artworkInstance.ownerOf(TOKEN_ID), ARTIST_A)
-
+		// accept the bid
 		var tx = await artworkInstance.acceptBid(TOKEN_ID);
-
-		// var platformBalanceAfter = await web3.eth.getBalance(NEW_PLATFORM_ADDRESS);
-		// console.log(web3.utils.fromWei(platformBalanceAfter.toString(), 'ether'));
-
+		// assert transfer worked
 		assert.isTrue(await artworkInstance.tokenDidHaveFirstSale(TOKEN_ID));
 		assert.equal(await artworkInstance.ownerOf(TOKEN_ID), COLLECTOR_B)
 
-		// first sale, so platform should have gotten 10% of the pending bid
-		// Artist A, B, C should all have equally split the sale amount (minus royalty)
+		// calculate the difference in platform's balance
+		var platformBalanceAfter = await web3.eth.getBalance(NEW_PLATFORM_ADDRESS);
+		var platformBalanceDifference = platformBalanceAfter - platformBalanceBefore;
+
+		// calculate the expected royalty
+		var platformFirstSalePercentage = await artworkInstance.platformFirstSalePercentage();
+		var platformExpectedRoyalty = (platformFirstSalePercentage / 100) * pendingBidAmount;
+		// assert difference is equal to expected royalty
+		assert.equal(platformBalanceDifference, platformExpectedRoyalty);
+		
+		// TODO Artist A, B, C should all have equally split the sale amount (minus royalty)
 	});
 	// TODO test artist accepting bid on base token (check that royalty is split amongst unique token creators and platform)
 	// TODO test Collector C bidding on base token

@@ -104,7 +104,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     // map a control token ID to its highest bid
 	mapping (uint256 => PendingBid) public pendingBids;
     // track whether this token was sold the first time or not (used for determining whether to use first or secondary sale percentage)
-    mapping (uint256 => bool) tokenDidHaveFirstSale;
+    mapping (uint256 => bool) public tokenDidHaveFirstSale;
     // only finalized artworks can be interacted with. All collaborating artists must confirm their token ID for a piece to finalize.
     mapping (uint256 => bool) public tokenIsConfirmed;
     // mapping of addresses that are allowed to control tokens on your behalf
@@ -156,6 +156,10 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     // Update the royalty percentages that platform and artists receive on first or secondary sales
     function updateRoyaltyPercentages(uint256 _platformFirstSalePercentage, uint256 _platformSecondSalePercentage, 
         uint256 _artistSecondSalePercentage) public onlyPlatform {
+    	// don't let the platform take all of a first sale
+    	require (_platformFirstSalePercentage < 100);
+    	// don't let secondary percentages take all of a sale either
+    	require (_platformSecondSalePercentage.add(_artistSecondSalePercentage) < 100);
         // update the percentage that the platform gets on first sale
         platformFirstSalePercentage = _platformFirstSalePercentage;
         // update the percentage that the platform gets on secondary sales
@@ -293,40 +297,26 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     }
 
     function onTokenSold(uint256 tokenId, uint256 saleAmount, address to) private {
-        // distribute the proceeds from the sale
-        // the amount that the platform gets from this sale (depends on whether this is first sale or not)
-        uint256 platformAmount;
-        uint256 hundred = 100;
         // if the first sale already happened, then give the artist + platform the secondary royalty percentage
         if (tokenDidHaveFirstSale[tokenId]) {
-            // mark down that this first sale occurred
-            tokenDidHaveFirstSale[tokenId] = true;
-            // calculate the artist royalty
-            uint256 artistAmount = hundred.sub(artistSecondSalePercentage).div(hundred).mul(saleAmount);
-            // transfer the artist's royalty
-            distributeFundsToCreators(artistAmount, uniqueTokenCreators[tokenId]);
-            // calculate the platform royalty
-            platformAmount = hundred.sub(platformSecondSalePercentage).div(hundred).mul(saleAmount);
-            // give platform its royalty
-            platformAddress.transfer(platformAmount);
-            // deduct the artist amount from the payment amount
-            saleAmount = saleAmount.sub(artistAmount);
-            // deduct the platform amount from the payment amount
-            saleAmount = saleAmount.sub(platformAmount);            
+        	// give platform its secondary sale percentage
+        	uint256 platformAmount = saleAmount.mul(platformSecondSalePercentage).div(100);
+        	platformAddress.transfer(platformAmount);
+        	// distribute the creator royalty amongst the creators (all artists involved for a base token, sole artist creator for layer )
+        	uint256 creatorAmount = saleAmount.mul(artistSecondSalePercentage).div(100);
+        	distributeFundsToCreators(creatorAmount, uniqueTokenCreators[tokenId]);            
             // cast the owner to a payable address
             address payable payableOwner = address(uint160(ownerOf(tokenId)));
             // transfer the remaining amount to the owner of the token
-            payableOwner.transfer(saleAmount);
+            payableOwner.transfer(saleAmount.sub(platformAmount).sub(creatorAmount));
         } else {
-            // else if this is the first sale for the token, give the platform the first sale royalty percentage
-            platformAmount = hundred.sub(platformFirstSalePercentage).div(hundred).mul(saleAmount);
-            // give platform its royalty
-            platformAddress.transfer(platformAmount);
-            // deduct the platform amount from the payment amount
-            saleAmount = saleAmount.sub(platformAmount);
-            // this is a token first sale, so distribute the funds to the unique token creators of this token
-            // (if it's a base token it will be all the unique creators, if it's a control token it will be that single artist)
-            distributeFundsToCreators(saleAmount, uniqueTokenCreators[tokenId]);            
+        	tokenDidHaveFirstSale[tokenId] = true;
+        	// give platform its first sale percentage
+        	uint256 platformAmount = saleAmount.mul(platformFirstSalePercentage).div(100);
+        	platformAddress.transfer(platformAmount);
+        	// this is a token first sale, so distribute the remaining funds to the unique token creators of this token
+        	// (if it's a base token it will be all the unique creators, if it's a control token it will be that single artist)                      
+            distributeFundsToCreators(saleAmount.sub(platformAmount), uniqueTokenCreators[tokenId]);
         }
         // clear the approval for this token
         approve(address(0), tokenId);
