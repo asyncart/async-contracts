@@ -176,6 +176,36 @@ contract("AsyncArtwork", function(accounts) {
 		}));
 	});
 
+	it ("tests a higher bid from same collector", async function() {		
+		const TOKEN_ID = 1;
+
+		const PREVIOUS_BID_AMOUNT = 0.1;
+		const BID_AMOUNT_ETHER = 0.15;
+
+		var collectorBalanceBefore = await web3.eth.getBalance(COLLECTOR_A);
+
+		var tx = await artworkInstance.bid(TOKEN_ID, {
+			value: web3.utils.toWei(BID_AMOUNT_ETHER.toString(), 'ether'),
+			from : COLLECTOR_A
+		});
+
+		var fulltx = await web3.eth.getTransaction(tx.tx);
+		var gasPriceInEther = web3.utils.fromWei(fulltx.gasPrice, 'ether')
+		var gasUsedInEther = tx.receipt.gasUsed * gasPriceInEther;
+
+		var collectorBalanceAfter = await web3.eth.getBalance(COLLECTOR_A);
+
+		// since the collector gets the previous bid back, their difference should be the new bid minus the previous bid plus the gas used
+		var collectorBalanceDifference = web3.utils.fromWei((collectorBalanceBefore - collectorBalanceAfter).toString(), 'ether');
+		var expectedAmountSpent = BID_AMOUNT_ETHER - PREVIOUS_BID_AMOUNT + gasUsedInEther;
+		assert.equal(parseFloat(collectorBalanceDifference).toFixed(8), parseFloat(expectedAmountSpent).toFixed(8));
+		
+		// check that the new pending bid reflects the bid amount
+		var pendingBid = await artworkInstance.pendingBids(TOKEN_ID)
+		assert.equal(pendingBid.bidder, COLLECTOR_A);
+		assert.equal(web3.utils.fromWei(pendingBid.amount.toString(), 'ether'), BID_AMOUNT_ETHER);
+	});
+
 	// it ("mints Hawking Artwork by multiple artist", function() {
 	//   	var artworkURI = "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa";	
 	//   	var controlTokenURIs = ["001.png", "002.png"];
