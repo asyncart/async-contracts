@@ -121,15 +121,17 @@ contract("AsyncArtwork", function(accounts) {
 	});
 
 
-	it ("expects a REVERT bid from artist A", async function() {		
+	it ("Reverts a bid from Artist A", async function() {		
 		const BID_AMOUNT_ETHER = 0.1;
 
-		await truffleAssert.reverts(artworkInstance.bid(0, {
+		const TOKEN_ID = 1;
+
+		await truffleAssert.reverts(artworkInstance.bid(TOKEN_ID, {
 				value: web3.utils.toWei(BID_AMOUNT_ETHER.toString(), 'ether'),
 		}));
 	});
 
-	it ("tests a bid from a collector A", async function() {		
+	it ("Submits a bid from collector A", async function() {		
 		const TOKEN_ID = 1;
 
 		const BID_AMOUNT_ETHER = 0.1;
@@ -145,7 +147,7 @@ contract("AsyncArtwork", function(accounts) {
 		assert.equal(web3.utils.fromWei(pendingBid.amount.toString(), 'ether'), BID_AMOUNT_ETHER);
 	});
 
-	it ("tests a bid from Collector B that's too low", async function() {		
+	it ("Reverts a bid from Collector B that's too low", async function() {		
 		const TOKEN_ID = 1;
 
 		const BID_AMOUNT_ETHER = 0.05;
@@ -156,7 +158,7 @@ contract("AsyncArtwork", function(accounts) {
 		}));
 	});
 
-	it ("tests a bid from Collector B that's equal to current", async function() {		
+	it ("Reverts a bid from Collector B that's equal", async function() {		
 		const TOKEN_ID = 1;
 
 		const BID_AMOUNT_ETHER = 0.1;
@@ -168,7 +170,7 @@ contract("AsyncArtwork", function(accounts) {
 		}));
 	});
 
-	it ("tests a higher bid from same collector A", async function() {		
+	it ("Collector A submits a higher bid", async function() {		
 		const TOKEN_ID = 1;
 
 		const PREVIOUS_BID_AMOUNT = 0.1;
@@ -198,7 +200,7 @@ contract("AsyncArtwork", function(accounts) {
 		assert.equal(web3.utils.fromWei(pendingBid.amount.toString(), 'ether'), BID_AMOUNT_ETHER);
 	});
 
-	it ("tests a higher bid from collector B (returning collector A's previous bid)", async function() {
+	it ("tests a higher bid from Collector B (returning collector A's previous bid)", async function() {
 		const TOKEN_ID = 1;
 
 		const PREVIOUS_BID_AMOUNT = 0.15;
@@ -233,6 +235,34 @@ contract("AsyncArtwork", function(accounts) {
 		platformOwner = await artworkInstance.platformAddress();
 
 		assert.equal(platformOwner, NEW_PLATFORM_ADDRESS);
+	});
+
+	it ("attempts to accept bid when not the owner", async function() {	
+		const TOKEN_ID = 1;
+
+		await truffleAssert.reverts(artworkInstance.acceptBid(TOKEN_ID, {
+			from: ARTIST_B
+		}));
+	});
+
+	it ("attempts to accept bid for non-existent token", async function() {	
+		const TOKEN_ID = 100;
+
+		await truffleAssert.reverts(artworkInstance.acceptBid(TOKEN_ID));
+	});
+
+	it ("Artist A accepts a current high bid from Collector B", async function() {	
+		const TOKEN_ID = 1;
+
+		var currentOwner = await artworkInstance.ownerOf(TOKEN_ID);
+
+		assert.equal(currentOwner, ARTIST_A)
+
+		await artworkInstance.acceptBid(TOKEN_ID);
+
+		currentOwner = await artworkInstance.ownerOf(TOKEN_ID);
+
+		assert.equal(currentOwner, COLLECTOR_B)
 	});
 	// TODO test artist accepting bid on base token (check that royalty is split amongst unique token creators and platform)
 	// TODO test Collector C bidding on base token
