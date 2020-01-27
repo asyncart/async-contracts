@@ -24,7 +24,8 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
 	// An event whenever a bid is proposed
 	event BidProposed (
 		uint256 tokenId,
-        uint256 bidAmount
+        uint256 bidAmount,
+        address bidder
     );
 
 	// An event whenever an bid is withdrawn
@@ -255,7 +256,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     	// set the new highest bid
     	pendingBids[tokenId] = PendingBid(msg.sender, msg.value, true);
     	// Emit event for the bid proposal
-    	emit BidProposed(tokenId, msg.value);
+    	emit BidProposed(tokenId, msg.value, msg.sender);
     }
     // allows an address with a pending bid to withdraw it
     function withdrawBid(uint256 tokenId) public {
@@ -409,5 +410,12 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         
     	// emit event
     	emit ControlLeverUpdated(controlTokenId, leverIds, previousValues, newValues);
+    }
+
+    // override the default transfer
+    function _transferFrom(address from, address to, uint256 tokenId) internal {        
+        super._transferFrom(from, to, tokenId);        
+        // clear a buy now price after being transferred
+        buyPrices[tokenId] = 0;
     }
 }
