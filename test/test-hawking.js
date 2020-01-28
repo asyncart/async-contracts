@@ -123,38 +123,42 @@ contract("AsyncArtwork", function(accounts) {
 
 
 	it ("Reverts a bid from Artist A", async function() {		
-		const BID_AMOUNT_ETHER = 0.1;
+		const bidAmountInEth = 0.1;
+		var bidAmountInWei = web3.utils.toWei(bidAmountInEth.toString(), 'ether');
 
 		const TOKEN_ID = 1;
 
 		await truffleAssert.reverts(artworkInstance.bid(TOKEN_ID, {
-				value: web3.utils.toWei(BID_AMOUNT_ETHER.toString(), 'ether'),
+			value: bidAmountInWei,
 		}));
 	});
 
 	it ("Submits a bid from collector A", async function() {		
 		const TOKEN_ID = 1;
 
-		const BID_AMOUNT_ETHER = 0.1;
+		var bidAmountInEth = 0.1;
+		var bidAmountInWei = web3.utils.toWei(bidAmountInEth.toString(), 'ether');
 
 		await artworkInstance.bid(TOKEN_ID, {
-			value: web3.utils.toWei(BID_AMOUNT_ETHER.toString(), 'ether'),
+			value: bidAmountInWei,
 			from : COLLECTOR_A
 		});
 
 		// asser that pending bid has correct bidder and amount
 		var pendingBid = await artworkInstance.pendingBids(TOKEN_ID)
+		
 		assert.equal(pendingBid.bidder, COLLECTOR_A);
-		assert.equal(web3.utils.fromWei(pendingBid.amount.toString(), 'ether'), BID_AMOUNT_ETHER);
+		assert.equal(pendingBid.amount, bidAmountInWei);
 	});
 
 	it ("Reverts a bid from Collector B that's too low", async function() {		
 		const TOKEN_ID = 1;
 
-		const BID_AMOUNT_ETHER = 0.05;
+		var bidAmountInEth = 0.05;
+		var bidAmountInWei = web3.utils.toWei(bidAmountInEth.toString(), 'ether');
 
 		await truffleAssert.reverts(artworkInstance.bid(TOKEN_ID, {
-			value: web3.utils.toWei(BID_AMOUNT_ETHER.toString(), 'ether'),
+			value: bidAmountInWei,
 			from : COLLECTOR_B
 		}));
 	});
@@ -162,11 +166,12 @@ contract("AsyncArtwork", function(accounts) {
 	it ("Reverts a bid from Collector B that's equal", async function() {		
 		const TOKEN_ID = 1;
 
-		const BID_AMOUNT_ETHER = 0.1;
+		var bidAmountInEth = 0.1;
+		var bidAmountInWei = web3.utils.toWei(bidAmountInEth.toString(), 'ether');
 
 		// should still fail
 		await truffleAssert.reverts(artworkInstance.bid(TOKEN_ID, {
-			value: web3.utils.toWei(BID_AMOUNT_ETHER.toString(), 'ether'),
+			value: bidAmountInWei,
 			from : COLLECTOR_B
 		}));
 	});
@@ -175,12 +180,14 @@ contract("AsyncArtwork", function(accounts) {
 		const TOKEN_ID = 1;
 
 		const PREVIOUS_BID_AMOUNT = 0.1;
-		const BID_AMOUNT_ETHER = 0.15;
+		
+		var bidAmountInEth = 0.15;
+		var bidAmountInWei = web3.utils.toWei(bidAmountInEth.toString(), 'ether');
 
 		var collectorBalanceBefore = await web3.eth.getBalance(COLLECTOR_A);
 
 		var tx = await artworkInstance.bid(TOKEN_ID, {
-			value: web3.utils.toWei(BID_AMOUNT_ETHER.toString(), 'ether'),
+			value: bidAmountInWei,
 			from : COLLECTOR_A
 		});
 
@@ -192,13 +199,13 @@ contract("AsyncArtwork", function(accounts) {
 
 		// since the collector gets the previous bid back, their difference should be the new bid minus the previous bid plus the gas used
 		var collectorBalanceDifference = web3.utils.fromWei((collectorBalanceBefore - collectorBalanceAfter).toString(), 'ether');
-		var expectedAmountSpent = BID_AMOUNT_ETHER - PREVIOUS_BID_AMOUNT + gasUsedInEther;
+		var expectedAmountSpent = bidAmountInEth - PREVIOUS_BID_AMOUNT + gasUsedInEther;
 		assert.equal(parseFloat(collectorBalanceDifference).toFixed(8), parseFloat(expectedAmountSpent).toFixed(8));
 		
 		// check that the new pending bid reflects the bid amount
 		var pendingBid = await artworkInstance.pendingBids(TOKEN_ID)
 		assert.equal(pendingBid.bidder, COLLECTOR_A);
-		assert.equal(web3.utils.fromWei(pendingBid.amount.toString(), 'ether'), BID_AMOUNT_ETHER);
+		assert.equal(pendingBid.amount, bidAmountInWei);
 	});
 
 	it ("tests a higher bid from Collector B (returning collector A's previous bid)", async function() {
@@ -310,6 +317,20 @@ contract("AsyncArtwork", function(accounts) {
 		var buyPriceAfter = await artworkInstance.buyPrices(TOKEN_ID);
 		assert.equal(buyPriceAfter, newPriceInWei);
 	});
+
+	it ("Collector C makes a bid which is accepted by Collector B", async function() {
+		const TOKEN_ID = 1;
+
+		var bidPriceInEth = 1.8;
+		var bidPriceInWei = web3.utils.toWei(bidPriceInEth.toString(), 'ether');
+
+		await artworkInstance.bid(TOKEN_ID, {
+			value : bidPriceInWei,
+			from : COLLECTOR_C
+		});
+
+
+	});	
 	// TODO test artist accepting bid on base token (check that royalty is split amongst unique token creators and platform)
 	// TODO test Collector C bidding on base token
 	// TODO test Collector B accepting. (royalty should be split but lower %).
