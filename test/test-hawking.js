@@ -180,7 +180,7 @@ contract("AsyncArtwork", function(accounts) {
 		const TOKEN_ID = 1;
 
 		const PREVIOUS_BID_AMOUNT = 0.1;
-		
+
 		var bidAmountInEth = 0.15;
 		var bidAmountInWei = web3.utils.toWei(bidAmountInEth.toString(), 'ether');
 
@@ -212,12 +212,14 @@ contract("AsyncArtwork", function(accounts) {
 		const TOKEN_ID = 1;
 
 		const PREVIOUS_BID_AMOUNT = 0.15;
-		const BID_AMOUNT_ETHER = 0.16;
+
+		var bidAmountInEth = 0.16;
+		var bidAmountInWei = web3.utils.toWei(bidAmountInEth.toString(), 'ether');
 
 		var collectorABalanceBefore = await web3.eth.getBalance(COLLECTOR_A);
 
 		var tx = await artworkInstance.bid(TOKEN_ID, {
-			value: web3.utils.toWei(BID_AMOUNT_ETHER.toString(), 'ether'),
+			value: bidAmountInWei,
 			from : COLLECTOR_B
 		});
 
@@ -230,7 +232,7 @@ contract("AsyncArtwork", function(accounts) {
 		// check that the new pending bid reflects the bid amount
 		var pendingBid = await artworkInstance.pendingBids(TOKEN_ID)
 		assert.equal(pendingBid.bidder, COLLECTOR_B);
-		assert.equal(web3.utils.fromWei(pendingBid.amount.toString(), 'ether'), BID_AMOUNT_ETHER);
+		assert.equal(pendingBid.amount, bidAmountInWei);
 	});
 
 	it ("tests transferring platform ownership to a new owner", async function() {
@@ -329,7 +331,24 @@ contract("AsyncArtwork", function(accounts) {
 			from : COLLECTOR_C
 		});
 
+ 		// asser that pending bid has correct bidder and amount
+		var pendingBid = await artworkInstance.pendingBids(TOKEN_ID)
+		
+		assert.equal(pendingBid.bidder, COLLECTOR_C);
+		assert.equal(pendingBid.amount, bidPriceInWei);
 
+		// accept the bid
+		var tx = await artworkInstance.acceptBid(TOKEN_ID, {
+			from : COLLECTOR_B
+		});
+
+		// ensure that buy price got reset after sale
+		var buyPriceAfterAccept = await artworkInstance.buyPrices(TOKEN_ID);
+		assert.equal(buyPriceAfterAccept, 0);
+
+		// ensure that pending bid is cleared
+		pendingBid = await artworkInstance.pendingBids(TOKEN_ID)
+		assert.equal(pendingBid.amount, 0);
 	});	
 	// TODO test artist accepting bid on base token (check that royalty is split amongst unique token creators and platform)
 	// TODO test Collector C bidding on base token
