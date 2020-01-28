@@ -11,6 +11,7 @@ contract("AsyncArtwork", function(accounts) {
 
 	const COLLECTOR_A = "0x23e3161ec6f55B9474c6B264ab4a46c149912344"
 	const COLLECTOR_B = "0xab40Aa5942182288E280e166F46B683CF1FAb1A5"
+	const COLLECTOR_C = "0x966Fb062c0C03F40e9A5F2b53871050e8312288B"
 
 	const NEW_PLATFORM_ADDRESS = "0xD024C0CFE9881da3998C78B1Eccd56b75ccC3Ec8";
 
@@ -247,8 +248,21 @@ contract("AsyncArtwork", function(accounts) {
 		await truffleAssert.reverts(artworkInstance.acceptBid(TOKEN_ID));
 	});
 
-	it ("Artist A accepts a current high bid from Collector B", async function() {	
+	it ("Artist A gives approval to Collector C", async function() {	
 		const TOKEN_ID = 1;
+
+		await artworkInstance.approve(COLLECTOR_C, TOKEN_ID);
+
+		var approvedAddress = await artworkInstance.getApproved(TOKEN_ID);
+		assert.equal(approvedAddress, COLLECTOR_C);
+	});
+
+	it ("Artist A accepts a current high bid from Collector B", async function() {
+		const TOKEN_ID = 1;
+
+		// approved address should still be collector C
+		var approvedAddress = await artworkInstance.getApproved(TOKEN_ID);
+		assert.equal(approvedAddress, COLLECTOR_C);
 		
 		// get the pending bid amount
 		var pendingBidAmount = (await artworkInstance.pendingBids(TOKEN_ID)).amount;
@@ -272,8 +286,29 @@ contract("AsyncArtwork", function(accounts) {
 		var platformExpectedRoyalty = (platformFirstSalePercentage / 100) * pendingBidAmount;
 		// assert difference is equal to expected royalty
 		assert.equal(platformBalanceDifference, platformExpectedRoyalty);
+
+		// approval should be reset after a sale
+		approvedAddress = await artworkInstance.getApproved(TOKEN_ID);
+		assert.equal(approvedAddress, "0x0000000000000000000000000000000000000000");
 		
 		// TODO Artist A, B, C should all have equally split the sale amount (minus royalty)
+	});
+
+	it ("Collector B sets a buy price", async function() {
+		const TOKEN_ID = 1;
+
+		var newPriceInEth = 0.75;
+		var newPriceInWei = web3.utils.toWei(newPriceInEth.toString(), 'ether');
+
+		var buyPriceBefore = await artworkInstance.buyPrices(TOKEN_ID);
+		assert.equal(buyPriceBefore, 0);
+
+		await artworkInstance.makeBuyPrice(TOKEN_ID, newPriceInWei, {
+			from : COLLECTOR_B
+		});
+
+		var buyPriceAfter = await artworkInstance.buyPrices(TOKEN_ID);
+		assert.equal(buyPriceAfter, newPriceInWei);
 	});
 	// TODO test artist accepting bid on base token (check that royalty is split amongst unique token creators and platform)
 	// TODO test Collector C bidding on base token

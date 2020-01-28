@@ -322,7 +322,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         // // clear the approval for this token
         // approve(address(0), tokenId); // TODO verify that approval gets cleared on transfer
         // Transfer token to msg.sender
-        _safeTransferFrom(ownerOf(tokenId), to, tokenId);        
+        _safeTransferFrom(ownerOf(tokenId), to, tokenId, "");
         // // reset buy price
         // buyPrices[tokenId] = 0; // TODO verify that buy prices get reset on transfer
         // clear highest bid
