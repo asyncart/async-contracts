@@ -353,6 +353,10 @@ contract("AsyncArtwork", function(accounts) {
 	// TODO test artist accepting bid on base token (check that royalty is split amongst unique token creators and platform)
 	// TODO test Collector C bidding on base token
 	// TODO test Collector B accepting. (royalty should be split but lower %).
+	// TODO test using a control token
+	// TODO test revert using a control token
+	// TODO test revert trying to take buy when 0
+	// TODO test grant permission to using a control token
 
 });
 
