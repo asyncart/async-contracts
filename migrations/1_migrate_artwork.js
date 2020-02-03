@@ -1,106 +1,123 @@
 const AsyncArtwork = artifacts.require("./AsyncArtwork.sol");
 
-const OWNER_ADDRESS = "0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05"
-
-// async function DeployArtwork(deployer, artworkTokenURI, title, symbol, controlTokenURIEndIndices, 
-//   controlTokenURIs, numLeversPerControlToken, leverIds, minValues, maxValues, startValues) {
-
-
-
-//   var artInstance = await AsyncArtwork.deployed();
-
-//   await artInstance.mintArtwork(OWNER_ADDRESS, artworkTokenURI, controlTokenURIs, controlTokenURIEndIndices, numLeversPerControlToken, 
-//     leverIds, minValues, maxValues, startValues);
-
-//   console.log("Platform First " + (await artInstance.platformFirstSaleRoyaltyPercentage()) + "%")
-//   console.log("Platform Secondary " + (await artInstance.platformSecondaryRoyaltyPercentage()) + "%")
-//   console.log("Artist Secondary " + (await artInstance.artistSecondaryRoyaltyPercentage()) + "%")
-
-//   console.log(await artInstance.name())
-//   console.log(await artInstance.symbol())
-  
-//   console.log("balance of owner: " + (await artInstance.balanceOf(OWNER_ADDRESS)).toString())
-
-//   console.log("artwork URI: " + (await artInstance.tokenURI(0)));
-
-//   console.log("Artwork Token: " + 0 + " has: "+ (await artInstance.numControlTokensMapping(0)).toString() + " control token(s)");
-
-//   for (var i = 0; i < controlTokenURIEndIndices.length; i++) {    
-//     console.log("Control Token: " + (i + 1));
-
-//     console.log("    Token URI: " + (await artInstance.tokenURI((i + 1))));
-    
-//     console.log("    MinMax: " + (await artInstance.getControlLeverMinMax(i + 1, 0)));
-
-//     console.log("    Current Value: " + (await artInstance.getControlLeverValue(i + 1, 0)));
-//   }
-
-//   return artInstance;
-// }
-
 module.exports = async function(deployer) {
-  var title = "AA_v2";
-  var symbol = "AA_v2";
-  // var artworkURI = "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa";
-    
-  // var controlTokenURIs = ["QmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvC", "ZmXrJCW3exLXe2iCCCeVSTais4rTW8FZgisZTHAxVLVXvC"];
-
-  // // generate the end indices
-  // var controlTokenURIEndIndex = 0;
-  // var controlTokenURIEndIndices = []; 
-  // for (var i = 0; i < controlTokenURIs.length; i++) {
-  //   controlTokenURIEndIndex += controlTokenURIs[i].length;    
-  //   controlTokenURIEndIndices.push(controlTokenURIEndIndex)    
-  // }
-  
-  // var numLeversPerControlToken = [1, 1];
-  // var leverIds = [0, 0];
-  // var minValues = [0, 0];
-  // var maxValues = [1, 2];
-  // var startValues = [0, 0];
-  
-  // var artworkInstance = await DeployArtwork(deployer, "Qmdje2aCRquFe15oFD88jyoNrbTFUUc74xQqQMssqcZwHa", 
-  //     title, symbol, controlTokenURIEndIndices, controlTokenURIs.join(""), 
-  //     numLeversPerControlToken, leverIds, minValues, maxValues, startValues);
+  var title = "AA_v4";
+  var symbol = "AA_v4";  
 
   console.log("AsyncArtwork bytecode size: ", AsyncArtwork.deployedBytecode.length);
   
   await deployer.deploy(AsyncArtwork, title, symbol)  
 
-  console.log("Done")
-  // await artworkInstance.mintControlTokenTo(OWNER_ADDRESS, CONTROL_TOKEN_ID, leverIds.length, "QmZ5QMF88zPKKLoe6t35itphECVE6cZTARmUzt69RrpGdr");
-  // await artworkInstance.addControlTokenLevers(CONTROL_TOKEN_ID, leverIds, minValues, maxValues, startValues);
+  var artworkInstance = await AsyncArtwork.deployed();
 
-  // var controlToken = await artworkInstance.controlTokenMapping(CONTROL_TOKEN_ID)
-  
-  // // console.log(controlToken.numControlLevers.toString())
-  // // console.log(controlToken.expectedNumControlLevers.toString())
-  // // console.log(controlToken)
-  // // console.log(controlToken.minValue.toString())
-  // // // console.log(controlToken.maxValue.toString())
+  var expectedArtworkTokenId = 0;
 
-  // var controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 0);
-  
-  // console.log(controlLeverValue.toString())
+  // const ARTIST_A = "0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05";
+  const ARTIST_A = "0x73263CA29Fd9ad63AFf43e491D29e24f3815e827";
 
-  // controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 1);
-  
-  // console.log(controlLeverValue.toString())
+  // MLIBTY
+  var controlTokenArtists = [ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A]
 
-  // // use the control token  
-  // leverIds = [1, 0];
-  // var newValues = [200, 75];
-  
-  // await artworkInstance.useControlToken(CONTROL_TOKEN_ID, leverIds, newValues);
+  var minValues = [];
+  // MLIBTY
+  minValues.push([0, 0, 60]); // Layer 1 - city / BTC logo
+  minValues.push([0, 0, 40]); // Layer 2 - Red A
+  minValues.push([0, 0, 40]); // Layer 3 - Red B
+  minValues.push([0, 0, 40]); // Layer 4 - Red C
+  minValues.push([0, 0, 40]); // Layer 5 - Red D
+  minValues.push([0, 0, 30]); // Layer 6 - Black Plant 1
+  minValues.push([0, 0, 30]); // Layer 7 - Black Plant 2
+  minValues.push([0, 0, 40]); // Layer 8 - Black Shapes 1
+  minValues.push([0, 0, 40]); // Layer 9 - Black Shapes 2
+  minValues.push([0, 0, 40]); // Layer 10 - Black Shapes 3
+  minValues.push([0, 0, 40]); // Layer 11 - Black Shapes 4
+  minValues.push([0, 80]); // Layer 12 - Red Stains
+  minValues.push([0, 80]); // Layer 13 - Infinity Falls
 
-  // controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 1);
-  
-  // console.log("after using control: " + controlLeverValue.toString())
+  var maxValues = [];
+  // MLIBTY
+  maxValues.push([359, 2, 100]) // Layer 1 - city / BTC logo
+  maxValues.push([359, 359, 80]); // Layer 2 - Red A
+  maxValues.push([359, 359, 80]); // Layer 3 - Red B
+  maxValues.push([359, 359, 80]); // Layer 4 - Red C
+  maxValues.push([359, 359, 80]); // Layer 5 - Red D
+  maxValues.push([359, 359, 60]); // Layer 6 - Black Plant 1
+  maxValues.push([359, 359, 60]); // Layer 7 - Black Plant 2
+  maxValues.push([359, 359, 70]); // Layer 8 - Black Shapes 1
+  maxValues.push([359, 359, 60]); // Layer 9 - Black Shapes 2
+  maxValues.push([359, 359, 60]); // Layer 10 - Black Shapes 3
+  maxValues.push([359, 359, 60]); // Layer 11 - Black Shapes 4
+  maxValues.push([359, 120]); // Layer 12 - Red Stains
+  maxValues.push([359, 120]); // Layer 13 - Infinity Falls
 
-  // controlLeverValue = await artworkInstance.getControlLeverValue(CONTROL_TOKEN_ID, 0);
-  
-  // console.log("after using control: " + controlLeverValue.toString())
+  var startValues = [];
+  // MLIBTY
+  startValues.push([0, 0, 67]) // Layer 1 - city / BTC logo
+  startValues.push([320, 250, 50]); // Layer 2 - Red A
+  startValues.push([45, 0, 65]); // Layer 3 - Red B
+  startValues.push([135, 20, 60]); // Layer 4 - Red C
+  startValues.push([235, 0, 65]); // Layer 5 - Red D
+  startValues.push([250, 45, 40]); // Layer 6 - Black Plant 1
+  startValues.push([210, 0, 40]); // Layer 7 - Black Plant 2
+  startValues.push([140, 0, 65]); // Layer 8 - Black Shapes 1
+  startValues.push([310, 0, 45]); // Layer 9 - Black Shapes 2
+  startValues.push([45, 0, 50]); // Layer 10 - Black Shapes 3
+  startValues.push([235, 0, 50]); // Layer 11 - Black Shapes 4
+  startValues.push([0, 100]); // Layer 12 - Red Stains
+  startValues.push([0, 100]); // Layer 13 - Infinity Falls
+
+  await mintArtwork(artworkInstance, controlTokenArtists, expectedArtworkTokenId, "bitcoin-makes-the-world-go-around/layout.json", 
+    minValues, maxValues, startValues);  
+
+  expectedArtworkTokenId = parseInt(await artworkInstance.totalSupply())
+
+  // ALOTTA
+  controlTokenArtists = [ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A];
+  // ALOTTA
+  minValues = [];
+  minValues.push([0]); // Layer 1 - Window
+  minValues.push([0]); // Layer 2 - Background
+  minValues.push([0]); // Layer 3 - Head
+  minValues.push([0]); // Layer 4 - Item
+  // ALOTTA
+  maxValues = [];
+  maxValues.push([3]) // Layer 1 - Window
+  maxValues.push([3]); // Layer 2 - Background
+  maxValues.push([3]); // Layer 3 - Head
+  maxValues.push([3]); // Layer 4 - Item
+  // ALOTTA
+  startValues = []
+  startValues.push([0]) // Layer 1 - Window
+  startValues.push([0]); // Layer 2 - Background
+  startValues.push([0]); // Layer 3 - Head
+  startValues.push([0]); // Layer 4 - Item
+
+  await mintArtwork(artworkInstance, controlTokenArtists, expectedArtworkTokenId, "alotta/layout.json", 
+    minValues, maxValues, startValues);
 };
+
+async function mintArtwork(artworkInstance, controlTokenArtists, expectedArtworkTokenId, tokenURI, minValues, maxValues, startValues) {
+  console.log("Minting artwork: " + tokenURI);
+
+  var controlTokenIds = [];
+  var controlTokenURIs = [];
+
+  for (var i = 0; i < controlTokenArtists.length; i++) {
+    controlTokenIds.push(i + expectedArtworkTokenId + 1);
+
+    controlTokenURIs.push((i+1) + "");
+  }   
+
+  await artworkInstance.mintArtwork(expectedArtworkTokenId, tokenURI, controlTokenArtists);
+
+  for (var controlTokenIndex = 0; controlTokenIndex < minValues.length; controlTokenIndex++ ) {
+    console.log("Minting control token " + controlTokenIds[controlTokenIndex]);
+
+    await artworkInstance.setupControlToken(expectedArtworkTokenId, controlTokenIds[controlTokenIndex], 
+          controlTokenURIs[controlTokenIndex], minValues[controlTokenIndex], maxValues[controlTokenIndex], 
+          startValues[controlTokenIndex]);
+  }
+}
 
 
 // const Scribe = artifacts.require("./Scribe.sol");

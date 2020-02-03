@@ -53,6 +53,8 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     event ControlLeverUpdated (
     	// the id of the token
     	uint256 tokenId,
+    	// an optional amount that the updater sent to boost priority of the rendering
+    	uint256 priorityTip,
         // the ids of the levers that were updated
         uint256[] leverIds,
     	// the previous values that the levers had before this update (for clients who want to animate the change)
@@ -377,7 +379,8 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     }
 
     // Allows owner (or permissioned user) of a control token to update its lever values
-    function useControlToken(uint256 controlTokenId, uint256[] memory leverIds, int256[] memory newValues) public {
+    // Optionally accept a payment to increase speed of rendering priority
+    function useControlToken(uint256 controlTokenId, uint256[] memory leverIds, int256[] memory newValues) public payable {
     	// check if sender is owner/approved of token OR if they're a permissioned controller for the token owner      
         require(_isApprovedOrOwner(msg.sender, controlTokenId) || (permissionedControllers[ownerOf(controlTokenId)] == msg.sender),
             "Owner or permissioned only"); 
@@ -403,9 +406,14 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
             // collect the previous lever values for the event emit below
             previousValues[i] = previousValue;
         }
+
+        // if there's a payment then send it to the platform (for higher priority updates)
+        if (msg.value > 0) {
+        	platformAddress.transfer(msg.value);
+        }
         
     	// emit event
-    	emit ControlLeverUpdated(controlTokenId, leverIds, previousValues, newValues);
+    	emit ControlLeverUpdated(controlTokenId, msg.value, leverIds, previousValues, newValues);
     }
 
     // override the default transfer
