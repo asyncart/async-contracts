@@ -118,6 +118,8 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     uint256 public platformSecondSalePercentage;
     // the percentage of sale that an artist gets on secondary sales
     uint256 public artistSecondSalePercentage;
+    // gets incremented to placehold for tokens not minted yet
+    uint256 public expectedTokenSupply;
     // the address of the platform (for receving commissions and royalties)
     address payable public platformAddress;
 
@@ -184,10 +186,12 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         // enforce that artworkTokenId is correct
         require (controlTokenMapping[controlTokenId].containingArtworkTokenId == artworkTokenId);
         // ensure that only the control token artist is attempting this mint
-        require(uniqueTokenCreators[controlTokenId][0] == msg.sender, "Must be control token artist");        
+        require(uniqueTokenCreators[controlTokenId][0] == msg.sender, "Must be control token artist");
+        // mint the control token here
+        super._safeMint(msg.sender, controlTokenId);
         // enforce that the length of all the array lengths are equal
         // require((leverMinValues.length == leverMaxValues.length) && (leverMaxValues.length == leverStartValues.length), "Values array mismatch");
-        // TODO test that it's okay if you provide different start values array from min/max arrays. should still fail from below require
+        // TODO test that it's okay if you provide different start values array from min/max arrays. should still fail from below require        
         // set token URI
         super._setTokenURI(controlTokenId, controlTokenURI);        
         // create the control token
@@ -207,11 +211,14 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
 
         emit TokenConfirmed(controlTokenId);
     }
+
     function mintArtwork(uint256 artworkTokenId, string memory artworkTokenURI, address payable[] memory controlTokenArtists
     ) public onlyWhitelistedCreator {
-        require (artworkTokenId == totalSupply(), "TotalSupply different");
+        require (artworkTokenId == expectedTokenSupply, "ExpectedTokenSupply different");
         // Mint the token that represents ownership of the entire artwork    
         super._safeMint(msg.sender, artworkTokenId);
+        expectedTokenSupply++;
+
         super._setTokenURI(artworkTokenId, artworkTokenURI);        
         // track the msg.sender address as the artist address for future royalties
         uniqueTokenCreators[artworkTokenId].push(msg.sender);
@@ -221,13 +228,12 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         // iterate through all control token URIs (1 for each control token)
         for (uint256 i = 0; i < controlTokenArtists.length; i++) {
             // use the curren token supply as the next token id
-            uint256 controlTokenId = totalSupply();
+            uint256 controlTokenId = expectedTokenSupply;
+            expectedTokenSupply++;
 
             uniqueTokenCreators[controlTokenId].push(controlTokenArtists[i]);
             // stub in an existing control token so exists is true
-            controlTokenMapping[controlTokenId] = ControlToken(artworkTokenId, 0, true);
-            // mint the control token
-            super._safeMint(controlTokenArtists[i], controlTokenId);
+            controlTokenMapping[controlTokenId] = ControlToken(artworkTokenId, 0, true);            
 
             if (controlTokenArtists[i] != msg.sender) {
                 bool containsControlTokenArtist = false;
