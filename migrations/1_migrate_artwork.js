@@ -1,8 +1,8 @@
 const AsyncArtwork = artifacts.require("./AsyncArtwork.sol");
 
 module.exports = async function(deployer) {
-  var title = "AA_v4";
-  var symbol = "AA_v4";  
+  var title = "AA_v5";
+  var symbol = "AA_v5";  
 
   console.log("AsyncArtwork bytecode size: ", AsyncArtwork.deployedBytecode.length);
   
