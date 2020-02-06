@@ -17,10 +17,6 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         uint256 artistSecondPercentage
     );
 
-    event TokenConfirmed (
-        uint256 tokenId
-    );
-
 	// An event whenever a bid is proposed
 	event BidProposed (
 		uint256 tokenId,
@@ -65,12 +61,12 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
 
     // struct for a token that controls part of the artwork
     struct ControlToken {        
-        // the containing artwork token that this control token belongs to
-        uint256 containingArtworkTokenId;
         // number that tracks how many levers there are
         uint256 numControlLevers;
         // false by default, true once instantiated
         bool exists;
+        // false by default, true once setup by the artist
+        bool isSetup;
         // the levers that this control token can use
         mapping (uint256 => ControlLever) levers;
     }
@@ -97,8 +93,9 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
 		bool exists;
 	}
 
-	mapping (address => bool) public whitelistedCreators;    
-
+    // creators who are allowed to mint on this contract
+	mapping (address => bool) public whitelistedCreators;
+    // for each token, holds an array of the creator collaborators. For layer tokens will just be [artist], for master tokens it may hold multiples
     mapping (uint256 => address payable[]) uniqueTokenCreators;
     // map a control token id to a control token struct
     mapping (uint256 => ControlToken) controlTokenMapping;
@@ -107,9 +104,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     // map a control token ID to its highest bid
 	mapping (uint256 => PendingBid) public pendingBids;
     // track whether this token was sold the first time or not (used for determining whether to use first or secondary sale percentage)
-    mapping (uint256 => bool) public tokenDidHaveFirstSale;
-    // only finalized artworks can be interacted with. All collaborating artists must confirm their token ID for a piece to finalize.
-    mapping (uint256 => bool) public tokenIsConfirmed;
+    mapping (uint256 => bool) public tokenDidHaveFirstSale;    
     // mapping of addresses that are allowed to control tokens on your behalf
     mapping (address => address) public permissionedControllers;
     // the percentage of sale that the platform gets on first sales
@@ -127,7 +122,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
 		// starting royalty amounts
         platformFirstSalePercentage = 10;
         platformSecondSalePercentage = 1;
-        artistSecondSalePercentage = 3;
+        artistSecondSalePercentage = 4;
 
         // by default, the platformAddress is the address that mints this contract
         platformAddress = msg.sender;
@@ -174,28 +169,25 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         // emit an event that contains the new royalty percentage values
         emit RoyaltyAmountUpdated(platformFirstSalePercentage, platformSecondSalePercentage, artistSecondSalePercentage);
     }
-    function setupControlToken(uint256 artworkTokenId, uint256 controlTokenId, string memory controlTokenURI,
+    function setupControlToken(uint256 controlTokenId, string memory controlTokenURI,
             int256[] memory leverMinValues, 
             int256[] memory leverMaxValues,
             int256[] memory leverStartValues
         ) public {
         // check that a control token exists for this token id
         require (controlTokenMapping[controlTokenId].exists, "No control token found");
-        // ensure that this token is not confirmed yet
-        require (tokenIsConfirmed[controlTokenId] == false, "Already confirmed");
-        // enforce that artworkTokenId is correct
-        require (controlTokenMapping[controlTokenId].containingArtworkTokenId == artworkTokenId);
+        // ensure that this token is not setup yet
+        require (controlTokenMapping[controlTokenId].isSetup == false, "Already setup");        
         // ensure that only the control token artist is attempting this mint
         require(uniqueTokenCreators[controlTokenId][0] == msg.sender, "Must be control token artist");
         // mint the control token here
         super._safeMint(msg.sender, controlTokenId);
         // enforce that the length of all the array lengths are equal
-        // require((leverMinValues.length == leverMaxValues.length) && (leverMaxValues.length == leverStartValues.length), "Values array mismatch");
-        // TODO test that it's okay if you provide different start values array from min/max arrays. should still fail from below require        
+        require((leverMinValues.length == leverMaxValues.length) && (leverMaxValues.length == leverStartValues.length), "Values array mismatch");
         // set token URI
         super._setTokenURI(controlTokenId, controlTokenURI);        
         // create the control token
-        controlTokenMapping[controlTokenId] = ControlToken(artworkTokenId, leverStartValues.length, true);
+        controlTokenMapping[controlTokenId] = ControlToken(leverStartValues.length, true, true);
         // create the control token levers now
         for (uint256 k = 0; k < leverStartValues.length; k++) {
             // enforce that maxValue is greater than or equal to minValue
@@ -206,10 +198,6 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
             controlTokenMapping[controlTokenId].levers[k] = ControlLever(leverMinValues[k],
                 leverMaxValues[k], leverStartValues[k], true);
         }
-        // confirm this token
-        tokenIsConfirmed[controlTokenId] = true;
-
-        emit TokenConfirmed(controlTokenId);
     }
 
     function mintArtwork(uint256 artworkTokenId, string memory artworkTokenURI, address payable[] memory controlTokenArtists
@@ -223,8 +211,6 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         // track the msg.sender address as the artist address for future royalties
         uniqueTokenCreators[artworkTokenId].push(msg.sender);
 
-        tokenIsConfirmed[artworkTokenId] = true;
-
         // iterate through all control token URIs (1 for each control token)
         for (uint256 i = 0; i < controlTokenArtists.length; i++) {
             // use the curren token supply as the next token id
@@ -233,7 +219,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
 
             uniqueTokenCreators[controlTokenId].push(controlTokenArtists[i]);
             // stub in an existing control token so exists is true
-            controlTokenMapping[controlTokenId] = ControlToken(artworkTokenId, 0, true);            
+            controlTokenMapping[controlTokenId] = ControlToken(0, true, false);
 
             if (controlTokenArtists[i] != msg.sender) {
                 bool containsControlTokenArtist = false;
