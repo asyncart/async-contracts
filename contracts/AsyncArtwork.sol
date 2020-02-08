@@ -42,7 +42,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         // the price that the token was sold for
         uint256 salePrice,
     	// the address of the buyer
-    	address buyer    	
+    	address buyer  	
     );
 
     // An event whenever a control token has been updated
@@ -95,8 +95,8 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
 
     // creators who are allowed to mint on this contract
 	mapping (address => bool) public whitelistedCreators;
-    // for each token, holds an array of the creator collaborators. For layer tokens will just be [artist], for master tokens it may hold multiples
-    mapping (uint256 => address payable[]) uniqueTokenCreators;
+    // for each token, holds an array of the creator collaborators. For layer tokens it will likely just be [artist], for master tokens it may hold multiples
+    mapping (uint256 => address payable[]) public uniqueTokenCreators;
     // map a control token id to a control token struct
     mapping (uint256 => ControlToken) controlTokenMapping;
     // map control token ID to its buy price
@@ -172,7 +172,8 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     function setupControlToken(uint256 controlTokenId, string memory controlTokenURI,
             int256[] memory leverMinValues, 
             int256[] memory leverMaxValues,
-            int256[] memory leverStartValues
+            int256[] memory leverStartValues,
+            address payable[] memory additionalCollaborators
         ) public {
         // check that a control token exists for this token id
         require (controlTokenMapping[controlTokenId].exists, "No control token found");
@@ -198,6 +199,13 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
             controlTokenMapping[controlTokenId].levers[k] = ControlLever(leverMinValues[k],
                 leverMaxValues[k], leverStartValues[k], true);
         }
+        // the control token artist can optionally specify additional collaborators on this layer
+        for (uint256 i = 0; i < additionalCollaborators.length; i++) {
+            // can't provide burn address as collaborator
+            require(additionalCollaborators[i] != address(0));
+
+            uniqueTokenCreators[controlTokenId].push(additionalCollaborators[i]);
+        }
     }
 
     function mintArtwork(uint256 artworkTokenId, string memory artworkTokenURI, address payable[] memory controlTokenArtists
@@ -213,6 +221,9 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
 
         // iterate through all control token URIs (1 for each control token)
         for (uint256 i = 0; i < controlTokenArtists.length; i++) {
+            // can't provide burn address as artist
+            require(controlTokenArtists[i] != address(0));
+
             // use the curren token supply as the next token id
             uint256 controlTokenId = expectedTokenSupply;
             expectedTokenSupply++;

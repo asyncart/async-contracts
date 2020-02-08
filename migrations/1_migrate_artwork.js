@@ -12,67 +12,69 @@ module.exports = async function(deployer) {
 
   var expectedArtworkTokenId = 0;
 
-  const ARTIST_A = "0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05";
-  // const ARTIST_A = "0x73263CA29Fd9ad63AFf43e491D29e24f3815e827";
+  // const ARTIST_A = "0xD68f4893e2683BE6EfE6Aab3fca65848ACAFcC05";
+  const ARTIST_A = "0x73263CA29Fd9ad63AFf43e491D29e24f3815e827";
 
   // MLIBTY
   var controlTokenArtists = [ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A]
+  var controlTokenURIs = [];
 
-  var minValues = [];
-  // MLIBTY
-  minValues.push([0, 0, 50]); // Layer 1 - city / BTC logo
-  minValues.push([0, 0, 50]); // Layer 2 - Red A
-  minValues.push([0, 0, 50]); // Layer 3 - Red B
-  minValues.push([0, 0, 50]); // Layer 4 - Red C
-  minValues.push([0, 0, 50]); // Layer 5 - Red D
-  minValues.push([0, 0, 50]); // Layer 6 - Black Plant 1
-  minValues.push([0, 0, 50]); // Layer 7 - Black Plant 2
-  minValues.push([0, 0, 50]); // Layer 8 - Black Shapes 1
-  minValues.push([0, 0, 50]); // Layer 9 - Black Shapes 2
-  minValues.push([0, 0, 50]); // Layer 10 - Black Shapes 3
-  minValues.push([0, 0, 50]); // Layer 11 - Black Shapes 4
-  minValues.push([0, 80]); // Layer 12 - Red Stains
-  minValues.push([0, 80]); // Layer 13 - Infinity Falls
+  // var minValues = [];
+  // // MLIBTY
+  // minValues.push([0, 0, 50]); // Layer 1 - city / BTC logo
+  // minValues.push([0, 0, 50]); // Layer 2 - Red A
+  // minValues.push([0, 0, 50]); // Layer 3 - Red B
+  // minValues.push([0, 0, 50]); // Layer 4 - Red C
+  // minValues.push([0, 0, 50]); // Layer 5 - Red D
+  // minValues.push([0, 0, 50]); // Layer 6 - Black Plant 1
+  // minValues.push([0, 0, 50]); // Layer 7 - Black Plant 2
+  // minValues.push([0, 0, 50]); // Layer 8 - Black Shapes 1
+  // minValues.push([0, 0, 50]); // Layer 9 - Black Shapes 2
+  // minValues.push([0, 0, 50]); // Layer 10 - Black Shapes 3
+  // minValues.push([0, 0, 50]); // Layer 11 - Black Shapes 4
+  // minValues.push([0, 80]); // Layer 12 - Red Stains
+  // minValues.push([0, 80]); // Layer 13 - Infinity Falls
 
-  var maxValues = [];
-  // MLIBTY
-  maxValues.push([359,    2,    100]) // Layer 1 - city / BTC logo
-  maxValues.push([359,    359,  100]); // Layer 2 - Red A
-  maxValues.push([359,    359,  100]); // Layer 3 - Red B
-  maxValues.push([359,    359,  100]); // Layer 4 - Red C
-  maxValues.push([359,    359,  100]); // Layer 5 - Red D
-  maxValues.push([359,    359,  100]); // Layer 6 - Black Plant 1
-  maxValues.push([359,    359,  100]); // Layer 7 - Black Plant 2
-  maxValues.push([359,    359,  100]); // Layer 8 - Black Shapes 1
-  maxValues.push([359,    359,  100]); // Layer 9 - Black Shapes 2
-  maxValues.push([359,    359,  100]); // Layer 10 - Black Shapes 3
-  maxValues.push([359,    359,  100]); // Layer 11 - Black Shapes 4
-  maxValues.push([359,    120      ]); // Layer 12 - Red Stains
-  maxValues.push([359,    120      ]); // Layer 13 - Infinity Falls
+  // var maxValues = [];
+  // // MLIBTY
+  // maxValues.push([359,    2,    100]) // Layer 1 - city / BTC logo
+  // maxValues.push([359,    359,  100]); // Layer 2 - Red A
+  // maxValues.push([359,    359,  100]); // Layer 3 - Red B
+  // maxValues.push([359,    359,  100]); // Layer 4 - Red C
+  // maxValues.push([359,    359,  100]); // Layer 5 - Red D
+  // maxValues.push([359,    359,  100]); // Layer 6 - Black Plant 1
+  // maxValues.push([359,    359,  100]); // Layer 7 - Black Plant 2
+  // maxValues.push([359,    359,  100]); // Layer 8 - Black Shapes 1
+  // maxValues.push([359,    359,  100]); // Layer 9 - Black Shapes 2
+  // maxValues.push([359,    359,  100]); // Layer 10 - Black Shapes 3
+  // maxValues.push([359,    359,  100]); // Layer 11 - Black Shapes 4
+  // maxValues.push([359,    120      ]); // Layer 12 - Red Stains
+  // maxValues.push([359,    120      ]); // Layer 13 - Infinity Falls
 
-  var startValues = [];
-  // MLIBTY
-  startValues.push([0,    0,    50]) // Layer 1 - city / BTC logo
-  startValues.push([320,  250,  50]); // Layer 2 - Red A
-  startValues.push([45,   0,    65]); // Layer 3 - Red B
-  startValues.push([135,  20,   60]); // Layer 4 - Red C
-  startValues.push([235,  0,    65]); // Layer 5 - Red D
-  startValues.push([250,  45,   50]); // Layer 6 - Black Plant 1
-  startValues.push([210,  0,    50]); // Layer 7 - Black Plant 2
-  startValues.push([140,  0,    65]); // Layer 8 - Black Shapes 1
-  startValues.push([310,  0,    50]); // Layer 9 - Black Shapes 2
-  startValues.push([45,   0,    50]); // Layer 10 - Black Shapes 3
-  startValues.push([235,  0,    50]); // Layer 11 - Black Shapes 4
-  startValues.push([0,    100     ]); // Layer 12 - Red Stains
-  startValues.push([0,    100     ]); // Layer 13 - Infinity Falls
+  // var startValues = [];
+  // // MLIBTY
+  // startValues.push([0,    0,    50]) // Layer 1 - city / BTC logo
+  // startValues.push([320,  250,  50]); // Layer 2 - Red A
+  // startValues.push([45,   0,    65]); // Layer 3 - Red B
+  // startValues.push([135,  20,   60]); // Layer 4 - Red C
+  // startValues.push([235,  0,    65]); // Layer 5 - Red D
+  // startValues.push([250,  45,   50]); // Layer 6 - Black Plant 1
+  // startValues.push([210,  0,    50]); // Layer 7 - Black Plant 2
+  // startValues.push([140,  0,    65]); // Layer 8 - Black Shapes 1
+  // startValues.push([310,  0,    50]); // Layer 9 - Black Shapes 2
+  // startValues.push([45,   0,    50]); // Layer 10 - Black Shapes 3
+  // startValues.push([235,  0,    50]); // Layer 11 - Black Shapes 4
+  // startValues.push([0,    100     ]); // Layer 12 - Red Stains
+  // startValues.push([0,    100     ]); // Layer 13 - Infinity Falls
 
-  await mintArtwork(artworkInstance, controlTokenArtists, expectedArtworkTokenId, "bitcoin-makes-the-world-go-around/layout.json", 
-    minValues, maxValues, startValues);  
+  // await mintArtwork(artworkInstance, controlTokenArtists, expectedArtworkTokenId, "bitcoin-makes-the-world-go-around/layout.json", 
+  //   minValues, maxValues, startValues);  
 
-  expectedArtworkTokenId = parseInt(await artworkInstance.totalSupply())
+  // expectedArtworkTokenId = parseInt(await artworkInstance.totalSupply())
 
   // ALOTTA
   controlTokenArtists = [ARTIST_A, ARTIST_A, ARTIST_A, ARTIST_A];
+  controlTokenURIs = ["Qmdr9GRSJjb2EHRRhwXsXBnSen7NjQHbSzAv7H34kEpv8u"]
   // ALOTTA
   minValues = [];
   minValues.push([0]); // Layer 1 - Window
@@ -92,30 +94,28 @@ module.exports = async function(deployer) {
   startValues.push([0]); // Layer 3 - Head
   startValues.push([0]); // Layer 4 - Item
 
-  await mintArtwork(artworkInstance, controlTokenArtists, expectedArtworkTokenId, "alotta/layout.json", 
+  await mintArtwork(artworkInstance, controlTokenArtists, controlTokenURIs, expectedArtworkTokenId, "QmQKmHm5NqpKzrXuL6E7yMqWXiuU7TjAaj933xrM1Gvq2o", 
     minValues, maxValues, startValues);
 };
 
-async function mintArtwork(artworkInstance, controlTokenArtists, expectedArtworkTokenId, tokenURI, minValues, maxValues, startValues) {
+async function mintArtwork(artworkInstance, controlTokenArtists, controlTokenURIs, expectedArtworkTokenId, tokenURI, minValues, maxValues, startValues) {
   console.log("Minting artwork: " + tokenURI);
 
   var controlTokenIds = [];
-  var controlTokenURIs = [];
 
   for (var i = 0; i < controlTokenArtists.length; i++) {
     controlTokenIds.push(i + expectedArtworkTokenId + 1);
-
-    controlTokenURIs.push((i+1) + "");
   }   
 
+  // mint the master
   await artworkInstance.mintArtwork(expectedArtworkTokenId, tokenURI, controlTokenArtists);
 
+  // the the layer tokens
   for (var controlTokenIndex = 0; controlTokenIndex < minValues.length; controlTokenIndex++ ) {
     console.log("Minting control token " + controlTokenIds[controlTokenIndex]);
 
-    await artworkInstance.setupControlToken(expectedArtworkTokenId, controlTokenIds[controlTokenIndex], 
-          controlTokenURIs[controlTokenIndex], minValues[controlTokenIndex], maxValues[controlTokenIndex], 
-          startValues[controlTokenIndex]);
+    await artworkInstance.setupControlToken(controlTokenIds[controlTokenIndex], controlTokenURIs[controlTokenIndex], 
+          minValues[controlTokenIndex], maxValues[controlTokenIndex], startValues[controlTokenIndex]);
   }
 }
 
