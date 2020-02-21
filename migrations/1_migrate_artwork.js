@@ -67,7 +67,7 @@ module.exports = async function(deployer) {
   // startValues.push([0,    100     ]); // Layer 12 - Red Stains
   // startValues.push([0,    100     ]); // Layer 13 - Infinity Falls
 
-  // await mintArtwork(artworkInstance, controlTokenArtists, expectedArtworkTokenId, "bitcoin-makes-the-world-go-around/layout.json", 
+  // await mintArtwork(artworkInstance, controlTokenArtists, expectedArtworkTokenId, "QmV8xC6KLo7nZDc9TWnM8hvePoLB4iXq8HaAxDRtwmUy1X", 
   //   minValues, maxValues, startValues);  
 
   // expectedArtworkTokenId = parseInt(await artworkInstance.totalSupply())
@@ -94,8 +94,8 @@ module.exports = async function(deployer) {
   startValues.push([0]); // Layer 3 - Head
   startValues.push([0]); // Layer 4 - Item
 
-  await mintArtwork(artworkInstance, controlTokenArtists, controlTokenURIs, expectedArtworkTokenId, "QmQKmHm5NqpKzrXuL6E7yMqWXiuU7TjAaj933xrM1Gvq2o", 
-    minValues, maxValues, startValues);
+  // await mintArtwork(artworkInstance, controlTokenArtists, controlTokenURIs, expectedArtworkTokenId, "QmQKmHm5NqpKzrXuL6E7yMqWXiuU7TjAaj933xrM1Gvq2o", 
+  //   minValues, maxValues, startValues);
 };
 
 async function mintArtwork(artworkInstance, controlTokenArtists, controlTokenURIs, expectedArtworkTokenId, tokenURI, minValues, maxValues, startValues) {

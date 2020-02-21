@@ -44,7 +44,7 @@ contract("AsyncArtwork", function(accounts) {
 		}		
 
 		var controlTokenURIs = [];
-		controlTokenURIs.push("btc-city");
+		controlTokenURIs.push("QmV8xC6KLo7nZDc9TWnM8hvePoLB4iXq8HaAxDRtwmUy1X");
 		
 		// for (var i = 0; i < artistLayers.length; i++) {
 		// 	controlTokenIds.push(expectedArtworkTokenId + i + 1);

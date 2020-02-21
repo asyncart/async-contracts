@@ -180,11 +180,11 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         // ensure that this token is not setup yet
         require (controlTokenMapping[controlTokenId].isSetup == false, "Already setup");        
         // ensure that only the control token artist is attempting this mint
-        require(uniqueTokenCreators[controlTokenId][0] == msg.sender, "Must be control token artist");
-        // mint the control token here
-        super._safeMint(msg.sender, controlTokenId);
+        require(uniqueTokenCreators[controlTokenId][0] == msg.sender, "Must be control token artist");        
         // enforce that the length of all the array lengths are equal
         require((leverMinValues.length == leverMaxValues.length) && (leverMaxValues.length == leverStartValues.length), "Values array mismatch");
+        // mint the control token here
+        super._safeMint(msg.sender, controlTokenId);
         // set token URI
         super._setTokenURI(controlTokenId, controlTokenURI);        
         // create the control token
