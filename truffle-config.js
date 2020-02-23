@@ -57,6 +57,15 @@ module.exports = {
       gas: 4465030,
       gasPrice: 10000000000,
     },
+    mainnet: {
+      provider: () => {
+        console.log(process.env.MNEMONIC)
+        return new HDWalletProvider(process.env.MNEMONIC, 'https://mainnet.infura.io/v3/' + process.env.INFURA_API_KEY)
+      },
+      network_id: '1', // eslint-disable-line camelcase
+      gas: 4465030,
+      gasPrice: 10000000000,
+    },
     rinkeby: {
       provider: () => {
         console.log(process.env.MNEMONIC)

@@ -52,3 +52,4 @@ contracts/README.md
 package-lock.json
 deploy_goerli.sh
 deploy_rinkeby.sh
+deploy_mainnet.sh
