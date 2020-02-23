@@ -123,5 +123,15 @@ module.exports = {
       // //  evmVersion: "byzantium"
       }
     }
+  },
+
+  plugins: [
+    'truffle-plugin-verify'
+  ],
+  verify: {
+    preamble: "Copyright (C) 2020 Asynchronous Art, Inc.\nGNU General Public License v3.0\nFull notice https://github.com/asyncart/async-contracts/blob/master/LICENSE"
+  },
+  api_keys: {
+    etherscan: ''
   }
 }

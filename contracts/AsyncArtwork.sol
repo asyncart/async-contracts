@@ -1,16 +1,12 @@
-/*
- * Copyright (C) 2020 Asynchronous Art, Inc.
- * https://async.art
- *
- * GNU General Public License v3.0
- * Full notice at https://github.com/asyncart/async-contracts/blob/master/LICENSE
- */
-
 pragma solidity ^0.5.12;
 
 import "./ERC721.sol";
 import "./ERC721Enumerable.sol";
 import "./ERC721Metadata.sol";
+
+// Copyright (C) 2020 Asynchronous Art, Inc.
+// GNU General Public License v3.0
+// Full notice https://github.com/asyncart/async-contracts/blob/master/LICENSE
 
 contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     // An event whenever the platform address is updated
