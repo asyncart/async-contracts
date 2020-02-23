@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2020 Asynchronous Art, Inc.
+ * https://async.art
+ *
+ * GNU General Public License v3.0
+ * Full notice at https://github.com/asyncart/async-contracts/blob/master/LICENSE
+ */
+
 pragma solidity ^0.5.12;
 
 import "./ERC721.sol";
