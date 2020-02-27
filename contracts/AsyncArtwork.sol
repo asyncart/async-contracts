@@ -327,11 +327,11 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         	// this is a token first sale, so distribute the remaining funds to the unique token creators of this token
         	// (if it's a base token it will be all the unique creators, if it's a control token it will be that single artist)                      
             distributeFundsToCreators(saleAmount.sub(platformAmount), uniqueTokenCreators[tokenId]);
-        }            
-        // Transfer token to msg.sender
-        _safeTransferFrom(ownerOf(tokenId), to, tokenId, "");
+        }
         // clear highest bid
         pendingBids[tokenId] = PendingBid(address(0), 0, false);
+        // Transfer token to msg.sender
+        safeTransferFrom(ownerOf(tokenId), to, tokenId, "");        
         // Emit event
         emit TokenSale(tokenId, saleAmount, to);
     }
