@@ -1,17 +1,23 @@
 pragma solidity ^0.5.12;
 
-import "./ERC721.sol";
-import "./ERC721Enumerable.sol";
-import "./ERC721Metadata.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/ERC721Enumerable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/ERC721Metadata.sol";
 
 // Copyright (C) 2020 Asynchronous Art, Inc.
 // GNU General Public License v3.0
 // Full notice https://github.com/asyncart/async-contracts/blob/master/LICENSE
 
-contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
+contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Metadata{//, ERC721Enumerable, ERC721Metadata {
     // An event whenever the platform address is updated
     event PlatformAddressUpdated (
         address platformAddress
+    );
+
+    event PermissionUpdated (
+        uint256 tokenId,
+        address tokenOwner,
+        address permissioned
     );
 
     // An event whenever royalty amounts are updated
@@ -104,13 +110,15 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     // map a control token id to a control token struct
     mapping (uint256 => ControlToken) controlTokenMapping;
     // map control token ID to its buy price
-	mapping (uint256 => uint256) public buyPrices;	
+	mapping (uint256 => uint256) public buyPrices;
     // map a control token ID to its highest bid
 	mapping (uint256 => PendingBid) public pendingBids;
     // track whether this token was sold the first time or not (used for determining whether to use first or secondary sale percentage)
     mapping (uint256 => bool) public tokenDidHaveFirstSale;    
     // mapping of addresses that are allowed to control tokens on your behalf
-    mapping (address => address) public permissionedControllers;
+    mapping (address => mapping (uint256 => address)) public permissionedControllers;    
+    // mapping of addresses to credits for failed transfers
+    mapping (address => uint256) public failedTransferCredits;
     // the percentage of sale that the platform gets on first sales
     uint256 public platformFirstSalePercentage;
     // the percentage of sale that the platform gets on secondary sales
@@ -120,13 +128,18 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     // gets incremented to placehold for tokens not minted yet
     uint256 public expectedTokenSupply;
     // the address of the platform (for receving commissions and royalties)
-    address payable public platformAddress;
+    address payable public platformAddress;    
 
-	constructor (string memory name, string memory symbol) public ERC721Metadata(name, symbol) {
+    function initialize(string memory name, string memory symbol) public initializer {
+        ERC721.initialize();
+        // ERC721Enumerable.initialize();
+        ERC721Metadata.initialize(name, symbol);
+
 		// starting royalty amounts
         platformFirstSalePercentage = 10;
         platformSecondSalePercentage = 1;
-        artistSecondSalePercentage = 4;
+        
+        artistSecondSalePercentage = 10;
 
         // by default, the platformAddress is the address that mints this contract
         platformAddress = msg.sender;
@@ -144,6 +157,10 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     modifier onlyWhitelistedCreator() { 
     	require(whitelistedCreators[msg.sender] == true);
     	_; 
+    }
+
+    function setExpectedTokenSupply(uint256 _expectedTokenSupply) public onlyPlatform {
+        expectedTokenSupply = _expectedTokenSupply;
     }
     
     function updateWhitelist(address creator, bool state) public onlyPlatform {
@@ -253,6 +270,8 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     }
     // Bidder functions
     function bid(uint256 tokenId) public payable {
+        // don't allow bids of 0
+        require(msg.value > 0);        
     	// don't let owners/approved bid on their own tokens
         require(_isApprovedOrOwner(msg.sender, tokenId) == false);        
     	// check if there's a high bid
@@ -260,7 +279,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     		// enforce that this bid is higher
     		require(msg.value > pendingBids[tokenId].amount, "Bid must be > than current bid");
             // Return bid amount back to bidder
-            pendingBids[tokenId].bidder.transfer(pendingBids[tokenId].amount);
+            safeFundsTransfer(pendingBids[tokenId].bidder, pendingBids[tokenId].amount);
     	}
     	// set the new highest bid
     	pendingBids[tokenId] = PendingBid(msg.sender, msg.value, true);
@@ -272,7 +291,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         // check that there is a bid from the sender to withdraw
         require (pendingBids[tokenId].exists && (pendingBids[tokenId].bidder == msg.sender));
     	// Return bid amount back to bidder
-        pendingBids[tokenId].bidder.transfer(pendingBids[tokenId].amount);
+        safeFundsTransfer(pendingBids[tokenId].bidder, pendingBids[tokenId].amount);
 		// clear highest bid
 		pendingBids[tokenId] = PendingBid(address(0), 0, false);
 		// emit an event when the highest bid is withdrawn
@@ -291,7 +310,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
     	// Return all highest bidder's money
         if (pendingBids[tokenId].exists) {
             // Return bid amount back to bidder
-            pendingBids[tokenId].bidder.transfer(pendingBids[tokenId].amount);
+            safeFundsTransfer(pendingBids[tokenId].bidder, pendingBids[tokenId].amount);
             // clear highest bid
             pendingBids[tokenId] = PendingBid(address(0), 0, false);
         }        
@@ -302,7 +321,7 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         uint256 creatorShare = amount.div(creators.length);
 
         for (uint256 i = 0; i < creators.length; i++) {
-            creators[i].transfer(creatorShare);
+            safeFundsTransfer(creators[i], creatorShare);
         }
     }
 
@@ -311,19 +330,19 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
         if (tokenDidHaveFirstSale[tokenId]) {
         	// give platform its secondary sale percentage
         	uint256 platformAmount = saleAmount.mul(platformSecondSalePercentage).div(100);
-        	platformAddress.transfer(platformAmount);
+            safeFundsTransfer(platformAddress, platformAmount);
         	// distribute the creator royalty amongst the creators (all artists involved for a base token, sole artist creator for layer )
         	uint256 creatorAmount = saleAmount.mul(artistSecondSalePercentage).div(100);
         	distributeFundsToCreators(creatorAmount, uniqueTokenCreators[tokenId]);            
             // cast the owner to a payable address
             address payable payableOwner = address(uint160(ownerOf(tokenId)));
             // transfer the remaining amount to the owner of the token
-            payableOwner.transfer(saleAmount.sub(platformAmount).sub(creatorAmount));
+            safeFundsTransfer(payableOwner, saleAmount.sub(platformAmount).sub(creatorAmount));
         } else {
         	tokenDidHaveFirstSale[tokenId] = true;
         	// give platform its first sale percentage
         	uint256 platformAmount = saleAmount.mul(platformFirstSalePercentage).div(100);
-        	platformAddress.transfer(platformAmount);
+            safeFundsTransfer(platformAddress, platformAmount);
         	// this is a token first sale, so distribute the remaining funds to the unique token creators of this token
         	// (if it's a base token it will be all the unique creators, if it's a control token it will be that single artist)                      
             distributeFundsToCreators(saleAmount.sub(platformAmount), uniqueTokenCreators[tokenId]);
@@ -380,16 +399,19 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
 
         return returnValues;
     }
-    // anyone can grant permission to another address to control tokens on their behalf. Set to Address(0) to reset.
-    function grantControlPermission(address permissioned) public {
-        permissionedControllers[msg.sender] = permissioned;
+
+    // anyone can grant permission to another address to control a specific token on their behalf. Set to Address(0) to reset.
+    function grantControlPermission(uint256 tokenId, address permissioned) public {
+        permissionedControllers[msg.sender][tokenId] = permissioned;
+
+        emit PermissionUpdated(tokenId, msg.sender, permissioned);
     }
 
     // Allows owner (or permissioned user) of a control token to update its lever values
     // Optionally accept a payment to increase speed of rendering priority
     function useControlToken(uint256 controlTokenId, uint256[] memory leverIds, int256[] memory newValues) public payable {
     	// check if sender is owner/approved of token OR if they're a permissioned controller for the token owner      
-        require(_isApprovedOrOwner(msg.sender, controlTokenId) || (permissionedControllers[ownerOf(controlTokenId)] == msg.sender),
+        require(_isApprovedOrOwner(msg.sender, controlTokenId) || (permissionedControllers[ownerOf(controlTokenId)][controlTokenId] == msg.sender),
             "Owner or permissioned only"); 
         // collect the previous lever values for the event emit below
         int256[] memory previousValues = new int256[](newValues.length);
@@ -416,17 +438,40 @@ contract AsyncArtwork is ERC721, ERC721Enumerable, ERC721Metadata {
 
         // if there's a payment then send it to the platform (for higher priority updates)
         if (msg.value > 0) {
-        	platformAddress.transfer(msg.value);
+            safeFundsTransfer(platformAddress, msg.value);
         }
         
     	// emit event
     	emit ControlLeverUpdated(controlTokenId, msg.value, leverIds, previousValues, newValues);
     }
 
+    // Allows a user to withdraw all failed transaction credits
+    function withdrawAllFailedCredits() public {
+        uint256 amount = failedTransferCredits[msg.sender];
+
+        require(amount != 0);
+        require(address(this).balance >= amount);
+
+        failedTransferCredits[msg.sender] = 0;
+
+        msg.sender.transfer(amount);
+    }
+
+    // Safely transfer funds and if fail then store that amount as credits for a later pull
+    function safeFundsTransfer(address payable recipient, uint256 amount) internal {
+        // attempt to send the funds to the recipient
+        (bool success, ) = recipient.call.value(amount)("2300");
+        // if it failed, update their credit balance so they can pull it later
+        if (success == false) {
+            failedTransferCredits[recipient] += amount;
+        }
+    }
+
     // override the default transfer
-    function _transferFrom(address from, address to, uint256 tokenId) internal {        
-        super._transferFrom(from, to, tokenId);        
-        // clear a buy now price after being transferred
+    function _transferFrom(address from, address to, uint256 tokenId) internal {
+        // clear a buy now price
         buyPrices[tokenId] = 0;
+        // transfer the token
+        super._transferFrom(from, to, tokenId);        
     }
 }
