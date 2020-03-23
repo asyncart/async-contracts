@@ -208,7 +208,7 @@ contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         // mint the control token here
         super._safeMint(msg.sender, controlTokenId);
         // set token URI
-        // super._setTokenURI(controlTokenId, controlTokenURI);        
+        super._setTokenURI(controlTokenId, controlTokenURI);        
         // create the control token
         controlTokenMapping[controlTokenId] = ControlToken(leverStartValues.length, true, true);
         // create the control token levers now
