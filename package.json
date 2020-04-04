@@ -21,7 +21,9 @@
   "homepage": "https://github.com/conlan/async-contracts#readme",
   "dependencies": {
     "@truffle/hdwallet-provider": "^1.0.29",
+    "ganache-cli": "^6.9.1",
     "openzeppelin-solidity": "^2.4.0",
+    "truffle": "^5.1.20",
     "truffle-assertions": "^0.9.2",
     "truffle-plugin-verify": "^0.3.9"
   }
