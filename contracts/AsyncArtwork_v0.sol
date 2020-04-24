@@ -103,8 +103,8 @@ contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         bool exists;
     }
 
-    // creators who are allowed to mint on this contract
-    mapping(address => bool) public whitelistedCreators;
+    // what tokenId creators are allowed to mint
+    mapping(address => uint256) public creatorWhitelist;
     // for each token, holds an array of the creator collaborators. For layer tokens it will likely just be [artist], for master tokens it may hold multiples
     mapping(uint256 => address payable[]) public uniqueTokenCreators;
     // map a control token id to a control token struct
@@ -130,7 +130,7 @@ contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     // the address of the platform (for receving commissions and royalties)
     address payable public platformAddress;
 
-    function initialize(string memory name, string memory symbol) public initializer {
+    function initialize(string memory name, string memory symbol, uint256 initialExpectedTokenSupply) public initializer {
         ERC721.initialize();
         ERC721Enumerable.initialize();
         ERC721Metadata.initialize(name, symbol);
@@ -144,8 +144,10 @@ contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         // by default, the platformAddress is the address that mints this contract
         platformAddress = msg.sender;
 
-        // by default, platform is whitelisted
-        updateWhitelist(platformAddress, true);
+        // set the initial expected token supply       
+        expectedTokenSupply = initialExpectedTokenSupply;
+
+        require(expectedTokenSupply > 0);
     }
 
     // modifier for only allowing the platform to make a call
@@ -154,17 +156,21 @@ contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         _;
     }
 
-    modifier onlyWhitelistedCreator() {
-        require(whitelistedCreators[msg.sender] == true);
+    modifier onlyWhitelistedCreator(uint256 forTokenId) {
+        require(creatorWhitelist[msg.sender] == forTokenId);
         _;
     }
 
-    function setExpectedTokenSupply(uint256 _expectedTokenSupply) public onlyPlatform {
-        expectedTokenSupply = _expectedTokenSupply;
-    }
-
-    function updateWhitelist(address creator, bool state) public onlyPlatform {
-        whitelistedCreators[creator] = state;
+    // reserve a tokenID and layer count for a creator
+    function whitelistTokenForCreator(address creator, uint256 forTokenId, uint256 layerCount) public onlyPlatform {
+        // the tokenID we're reserving must be the current expected token supply
+        require(forTokenId == expectedTokenSupply);
+        // Async pieces must have at least 1 layer
+        require (layerCount > 0);
+        // reserve the tokenID for this creator
+        creatorWhitelist[creator] = forTokenId;
+        // increase the expected token supply
+        expectedTokenSupply = forTokenId + layerCount + 1;
     }
 
     // Allows the current platform address to update to something different
@@ -231,25 +237,24 @@ contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     }
 
     function mintArtwork(uint256 artworkTokenId, string memory artworkTokenURI, address payable[] memory controlTokenArtists)
-    public onlyWhitelistedCreator {
-        require(artworkTokenId == expectedTokenSupply, "ExpectedTokenSupply different");
+        public onlyWhitelistedCreator(artworkTokenId) {
+        // Can't mint a token with ID 0 anymore
+        require(artworkTokenId > 0);
         // Mint the token that represents ownership of the entire artwork    
         super._safeMint(msg.sender, artworkTokenId);
-        expectedTokenSupply++;
-
+        // reset the creator whitelist
+        creatorWhitelist[msg.sender] = 0;
+        // set the token URI for this art
         super._setTokenURI(artworkTokenId, artworkTokenURI);
         // track the msg.sender address as the artist address for future royalties
         uniqueTokenCreators[artworkTokenId].push(msg.sender);
-
         // iterate through all control token URIs (1 for each control token)
         for (uint256 i = 0; i < controlTokenArtists.length; i++) {
             // can't provide burn address as artist
             require(controlTokenArtists[i] != address(0));
-
-            // use the curren token supply as the next token id
-            uint256 controlTokenId = expectedTokenSupply;
-            expectedTokenSupply++;
-
+            // determine the tokenID for this control token
+            uint256 controlTokenId = artworkTokenId + i;
+            // add this control token artist to the unique creator list for that control token
             uniqueTokenCreators[controlTokenId].push(controlTokenArtists[i]);
             // stub in an existing control token so exists is true
             controlTokenMapping[controlTokenId] = ControlToken(0, true, false);
@@ -289,8 +294,8 @@ contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     }
     // allows an address with a pending bid to withdraw it
     function withdrawBid(uint256 tokenId) public {
-        // check that there is a bid from the sender to withdraw
-        require(pendingBids[tokenId].exists && (pendingBids[tokenId].bidder == msg.sender));
+        // check that there is a bid from the sender to withdraw (also allows platform address to withdraw a bid on someone's behalf)
+        require(pendingBids[tokenId].exists && ((pendingBids[tokenId].bidder == msg.sender) || (msg.sender == platformAddress)));
         // Return bid amount back to bidder
         safeFundsTransfer(pendingBids[tokenId].bidder, pendingBids[tokenId].amount);
         // clear highest bid
@@ -306,8 +311,8 @@ contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         uint256 saleAmount = buyPrices[tokenId];
         // check that there is a buy price
         require(saleAmount > 0);
-        // check that the buyer sent enough to purchase
-        require(msg.value >= saleAmount);
+        // check that the buyer sent exact amount to purchase
+        require(msg.value == saleAmount);
         // Return all highest bidder's money
         if (pendingBids[tokenId].exists) {
             // Return bid amount back to bidder
@@ -318,6 +323,7 @@ contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         onTokenSold(tokenId, saleAmount, msg.sender);
     }
 
+    // Take an amount and distribute it evenly amongst a list of creator addresses
     function distributeFundsToCreators(uint256 amount, address payable[] memory creators) private {
         uint256 creatorShare = amount.div(creators.length);
 
@@ -326,6 +332,8 @@ contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         }
     }
 
+    // When a token is sold via list price or bid. Distributes the sale amount to the unique token creators and transfer
+    // the token to the new owner
     function onTokenSold(uint256 tokenId, uint256 saleAmount, address to) private {
         // if the first sale already happened, then give the artist + platform the secondary royalty percentage
         if (tokenDidHaveFirstSale[tokenId]) {
@@ -351,6 +359,7 @@ contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         // clear highest bid
         pendingBids[tokenId] = PendingBid(address(0), 0, false);
         // Transfer token to msg.sender
+        // TODO replace with _transferFrom
         safeTransferFrom(ownerOf(tokenId), to, tokenId, "");
         // Emit event
         emit TokenSale(tokenId, saleAmount, to);
