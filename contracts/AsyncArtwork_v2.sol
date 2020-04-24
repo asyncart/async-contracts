@@ -1,14 +1,21 @@
-pragma solidity ^ 0.5 .12;
+pragma solidity ^0.5.12;
 
 import "./ERC721.sol";
 import "./ERC721Enumerable.sol";
 import "./ERC721Metadata.sol";
 
+// interface for the v1 contract
+interface AsyncArtwork_v1 {
+    function getControlToken(uint256 controlTokenId) external view returns (int256[] memory);
+
+    function tokenURI(uint256 tokenId) external view returns (string memory);
+}
+
 // Copyright (C) 2020 Asynchronous Art, Inc.
 // GNU General Public License v3.0
 // Full notice https://github.com/asyncart/async-contracts/blob/master/LICENSE
 
-contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Enumerable, ERC721Metadata {
+contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metadata {
     // An event whenever the platform address is updated
     event PlatformAddressUpdated(
         address platformAddress
@@ -129,8 +136,10 @@ contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     uint256 public expectedTokenSupply;
     // the address of the platform (for receving commissions and royalties)
     address payable public platformAddress;
+    // the address of the contract that can upgrade from v1 to v2 tokens
+    address public upgraderAddress;
 
-    function initialize(string memory name, string memory symbol, uint256 initialExpectedTokenSupply) public initializer {
+    function initialize(string memory name, string memory symbol, uint256 initialExpectedTokenSupply, address _upgraderAddress) public initializer {
         ERC721.initialize();
         ERC721Enumerable.initialize();
         ERC721Metadata.initialize(name, symbol);
@@ -143,6 +152,9 @@ contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
 
         // by default, the platformAddress is the address that mints this contract
         platformAddress = msg.sender;
+
+        // set the upgrader address
+        upgraderAddress = _upgraderAddress;
 
         // set the initial expected token supply       
         expectedTokenSupply = initialExpectedTokenSupply;
@@ -234,6 +246,37 @@ contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
 
             uniqueTokenCreators[controlTokenId].push(additionalCollaborators[i]);
         }
+    }
+
+    // upgrade a token from the v1 contract to this v2 version
+    function upgradeV1Token(uint256 artworkTokenId, address v1Address, bool isControlToken, address to, 
+        address payable[] memory uniqueTokenCreatorsForToken) public {
+        // get reference to v1 token contract
+        AsyncArtwork_v1 v1Token = AsyncArtwork_v1(v1Address);
+
+        // require that only the upgrader address is calling this method
+        require(msg.sender == upgraderAddress);
+
+        // preserve the unique token creators
+        uniqueTokenCreators[artworkTokenId] = uniqueTokenCreatorsForToken;
+
+        if (isControlToken) {
+            // preserve the control token details if it's a control token
+            int256[] memory controlToken = v1Token.getControlToken(artworkTokenId);
+            
+            controlTokenMapping[artworkTokenId] = ControlToken(controlToken.length / 3, true, true);
+
+            for (uint256 k = 0; k < controlToken.length / 3; k++) {
+                controlTokenMapping[artworkTokenId].levers[k] = ControlLever(controlToken[k * 3],
+                    controlToken[k * 3 + 1], controlToken[k * 3 + 2], true);
+            }
+        }
+
+        // Mint and transfer the token to the original v1 token owner
+        super._safeMint(to, artworkTokenId);
+
+        // set the same token URI
+        super._setTokenURI(artworkTokenId, v1Token.tokenURI(artworkTokenId));
     }
 
     function mintArtwork(uint256 artworkTokenId, string memory artworkTokenURI, address payable[] memory controlTokenArtists)
@@ -359,8 +402,7 @@ contract AsyncArtwork_v0 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         // clear highest bid
         pendingBids[tokenId] = PendingBid(address(0), 0, false);
         // Transfer token to msg.sender
-        // TODO replace with _transferFrom
-        safeTransferFrom(ownerOf(tokenId), to, tokenId, "");
+        _transferFrom(ownerOf(tokenId), to, tokenId);
         // Emit event
         emit TokenSale(tokenId, saleAmount, to);
     }
