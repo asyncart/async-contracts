@@ -296,7 +296,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
             // can't provide burn address as artist
             require(controlTokenArtists[i] != address(0));
             // determine the tokenID for this control token
-            uint256 controlTokenId = artworkTokenId + i;
+            uint256 controlTokenId = artworkTokenId + i + 1;
             // add this control token artist to the unique creator list for that control token
             uniqueTokenCreators[controlTokenId].push(controlTokenArtists[i]);
             // stub in an existing control token so exists is true
