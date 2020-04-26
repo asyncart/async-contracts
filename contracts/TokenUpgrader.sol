@@ -68,7 +68,7 @@ contract TokenUpgrader {
         require(isTokenReadyForUpgrade[tokenId], "Token not ready for upgrade.");
 
         // require the caller of this function to be the token owner
-        require(V1Token(v1TokenAddress).ownerOf(tokenId) == msg.sender);
+        require(V1Token(v1TokenAddress).ownerOf(tokenId) == msg.sender, "Sender doesn't own token.");
 
         // transfer the v1 token to be owned by this contract (effectively burning it since this contract can't send it back out)
         V1Token(v1TokenAddress).transferFrom(msg.sender, address(this), tokenId);

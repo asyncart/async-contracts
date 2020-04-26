@@ -1,5 +1,8 @@
 const Migrations = artifacts.require("./Migrations.sol");
-const AsyncArtwork = artifacts.require("./AsyncArtwork.sol");
+
+const AsyncArtwork_v2 = artifacts.require("./AsyncArtwork_v2.sol");
+
+const TokenUpgrader = artifacts.require("./TokenUpgrader.sol");
 
 module.exports = async function(deployer) {
   await deployer.deploy(Migrations)
@@ -7,7 +10,11 @@ module.exports = async function(deployer) {
   var title = "Async Art";
   var symbol = "ASYNC";
 
-  console.log("AsyncArtwork bytecode size: ", AsyncArtwork.deployedBytecode.length);
+  console.log("AsyncArtwork bytecode size: ", AsyncArtwork_v2.deployedBytecode.length);
 
-  await deployer.deploy(AsyncArtwork, title, symbol)
+  let v1_deployed = await deployer.deploy(AsyncArtwork_v2, title, symbol)
+
+  let v2_deployed = await deployer.deploy(AsyncArtwork_v2, title, symbol)
+
+  await deployer.deploy(TokenUpgrader);
 };
