@@ -27,10 +27,15 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         address permissioned
     );
 
-    // An event whenever royalty amounts are updated
-    event RoyaltyAmountUpdated(
+    // An event whenever royalty amount for a token is updated
+    event PlatformSalePercentageUpdated (
+        uint256 tokenId,
         uint256 platformFirstPercentage,
-        uint256 platformSecondPercentage,
+        uint256 platformSecondPercentage        
+    );
+
+    // An event whenever artist secondary sale percentage is updated
+    event ArtistSecondSalePercentUpdated (
         uint256 artistSecondPercentage
     );
 
@@ -110,26 +115,26 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         bool exists;
     }
 
-    // what tokenId creators are allowed to mint
-    mapping(address => uint256) public creatorWhitelist;
-    // for each token, holds an array of the creator collaborators. For layer tokens it will likely just be [artist], for master tokens it may hold multiples
-    mapping(uint256 => address payable[]) public uniqueTokenCreators;
-    // map a control token id to a control token struct
-    mapping(uint256 => ControlToken) controlTokenMapping;
-    // map control token ID to its buy price
-    mapping(uint256 => uint256) public buyPrices;
-    // map a control token ID to its highest bid
-    mapping(uint256 => PendingBid) public pendingBids;
     // track whether this token was sold the first time or not (used for determining whether to use first or secondary sale percentage)
     mapping(uint256 => bool) public tokenDidHaveFirstSale;
-    // mapping of addresses that are allowed to control tokens on your behalf
-    mapping(address => mapping(uint256 => address)) public permissionedControllers;
+    // what tokenId creators are allowed to mint
+    mapping(address => uint256) public creatorWhitelist;
+    // map control token ID to its buy price
+    mapping(uint256 => uint256) public buyPrices;    
     // mapping of addresses to credits for failed transfers
     mapping(address => uint256) public failedTransferCredits;
-    // the percentage of sale that the platform gets on first sales
-    uint256 public platformFirstSalePercentage;
-    // the percentage of sale that the platform gets on secondary sales
-    uint256 public platformSecondSalePercentage;
+    // mapping of tokenId to percentage of sale that the platform gets on first sales
+    mapping(uint256 => uint256) public platformFirstSalePercentages;
+    // mapping of tokenId to percentage of sale that the platform gets on secondary sales
+    mapping(uint256 => uint256) public platformSecondSalePercentages;
+    // for each token, holds an array of the creator collaborators. For layer tokens it will likely just be [artist], for master tokens it may hold multiples
+    mapping(uint256 => address payable[]) public uniqueTokenCreators;    
+    // map a control token ID to its highest bid
+    mapping(uint256 => PendingBid) public pendingBids;
+    // map a control token id to a control token struct
+    mapping(uint256 => ControlToken) controlTokenMapping;    
+    // mapping of addresses that are allowed to control tokens on your behalf
+    mapping(address => mapping(uint256 => address)) public permissionedControllers;
     // the percentage of sale that an artist gets on secondary sales
     uint256 public artistSecondSalePercentage;
     // gets incremented to placehold for tokens not minted yet
@@ -145,9 +150,6 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         ERC721Metadata.initialize(name, symbol);
 
         // starting royalty amounts
-        platformFirstSalePercentage = 10;
-        platformSecondSalePercentage = 1;
-
         artistSecondSalePercentage = 10;
 
         // by default, the platformAddress is the address that mints this contract
@@ -173,8 +175,9 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         _;
     }
 
-    // reserve a tokenID and layer count for a creator
-    function whitelistTokenForCreator(address creator, uint256 forTokenId, uint256 layerCount) public onlyPlatform {
+    // reserve a tokenID and layer count for a creator. Define a platform royalty percentage per art piece (some pieces have higher or lower amount)
+    function whitelistTokenForCreator(address creator, uint256 forTokenId, uint256 layerCount, 
+        uint256 platformFirstSalePercentage, uint256 platformSecondSalePercentage) public onlyPlatform {
         // the tokenID we're reserving must be the current expected token supply
         require(forTokenId == expectedTokenSupply);
         // Async pieces must have at least 1 layer
@@ -183,6 +186,9 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         creatorWhitelist[creator] = forTokenId;
         // increase the expected token supply
         expectedTokenSupply = forTokenId + layerCount + 1;
+        // define the platform percentages for this token here
+        platformFirstSalePercentages[forTokenId] = platformFirstSalePercentage;
+        platformSecondSalePercentages[forTokenId] = platformSecondSalePercentage;
     }
 
     // Allows the current platform address to update to something different
@@ -192,21 +198,28 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         emit PlatformAddressUpdated(newPlatformAddress);
     }
 
-    // Update the royalty percentages that platform and artists receive on first or secondary sales
-    function updateRoyaltyPercentages(uint256 _platformFirstSalePercentage, uint256 _platformSecondSalePercentage,
-        uint256 _artistSecondSalePercentage) public onlyPlatform {
-        // don't let the platform take all of a first sale
-        require(_platformFirstSalePercentage < 100);
-        // don't let secondary percentages take all of a sale either
-        require(_platformSecondSalePercentage.add(_artistSecondSalePercentage) < 100);
-        // update the percentage that the platform gets on first sale
-        platformFirstSalePercentage = _platformFirstSalePercentage;
-        // update the percentage that the platform gets on secondary sales
-        platformSecondSalePercentage = _platformSecondSalePercentage;
+    // Allows platform to waive the first sale requirement for a token (for charity events, special cases, etc)
+    function waiveFirstSaleRequirement(uint256 tokenId) public onlyPlatform {
+        // This allows the token sale proceeds to go to the current owner (rather than be distributed amongst the token's creators)
+        tokenDidHaveFirstSale[tokenId] = true;
+    }
+
+    // Allows platform to change the royalty percentage for a specific token
+    function updatePlatformSalePercentage(uint256 tokenId, uint256 platformFirstSalePercentage, 
+        uint256 platformSecondSalePercentage) public onlyPlatform {
+        // set the percentages for this token
+        platformFirstSalePercentages[tokenId] = platformFirstSalePercentage;
+        platformSecondSalePercentages[tokenId] = platformSecondSalePercentage;
+        // emit an event to notify that the platform percent for this token has changed
+        emit PlatformSalePercentageUpdated(tokenId, platformFirstSalePercentage, platformSecondSalePercentage);
+    }
+
+    // Allows platform to change the percentage that artists receive on secondary sales
+    function updateArtistSecondSalePercentage(uint256 _artistSecondSalePercentage) public onlyPlatform {
         // update the percentage that artists get on secondary sales
         artistSecondSalePercentage = _artistSecondSalePercentage;
-        // emit an event that contains the new royalty percentage values
-        emit RoyaltyAmountUpdated(platformFirstSalePercentage, platformSecondSalePercentage, artistSecondSalePercentage);
+        // emit an event to notify that the artist second sale percent has updated
+        emit ArtistSecondSalePercentUpdated(artistSecondSalePercentage);
     }
 
     function setupControlToken(uint256 controlTokenId, string memory controlTokenURI,
@@ -250,6 +263,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
 
     // upgrade a token from the v1 contract to this v2 version
     function upgradeV1Token(uint256 artworkTokenId, address v1Address, bool isControlToken, address to, 
+        uint256 platformFirstPercentageForToken, uint256 platformSecondPercentageForToken, 
         address payable[] memory uniqueTokenCreatorsForToken) public {
         // get reference to v1 token contract
         AsyncArtwork_v1 v1Token = AsyncArtwork_v1(v1Address);
@@ -271,6 +285,11 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
                     controlToken[k * 3 + 1], controlToken[k * 3 + 2], true);
             }
         }
+
+        // Set the royalty percentage for this token
+        platformFirstSalePercentages[artworkTokenId] = platformFirstPercentageForToken;
+
+        platformSecondSalePercentages[artworkTokenId] = platformSecondPercentageForToken;
 
         // Mint and transfer the token to the original v1 token owner
         super._safeMint(to, artworkTokenId);
@@ -301,6 +320,11 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
             uniqueTokenCreators[controlTokenId].push(controlTokenArtists[i]);
             // stub in an existing control token so exists is true
             controlTokenMapping[controlTokenId] = ControlToken(0, true, false);
+
+            // Layer control tokens use the same royalty percentage as the master token
+            platformFirstSalePercentages[controlTokenId] = platformFirstSalePercentages[artworkTokenId];
+
+            platformSecondSalePercentages[controlTokenId] = platformSecondSalePercentages[artworkTokenId];
 
             if (controlTokenArtists[i] != msg.sender) {
                 bool containsControlTokenArtist = false;
@@ -381,7 +405,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         // if the first sale already happened, then give the artist + platform the secondary royalty percentage
         if (tokenDidHaveFirstSale[tokenId]) {
             // give platform its secondary sale percentage
-            uint256 platformAmount = saleAmount.mul(platformSecondSalePercentage).div(100);
+            uint256 platformAmount = saleAmount.mul(platformSecondSalePercentages[tokenId]).div(100);
             safeFundsTransfer(platformAddress, platformAmount);
             // distribute the creator royalty amongst the creators (all artists involved for a base token, sole artist creator for layer )
             uint256 creatorAmount = saleAmount.mul(artistSecondSalePercentage).div(100);
@@ -393,7 +417,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         } else {
             tokenDidHaveFirstSale[tokenId] = true;
             // give platform its first sale percentage
-            uint256 platformAmount = saleAmount.mul(platformFirstSalePercentage).div(100);
+            uint256 platformAmount = saleAmount.mul(platformFirstSalePercentages[tokenId]).div(100);
             safeFundsTransfer(platformAddress, platformAmount);
             // this is a token first sale, so distribute the remaining funds to the unique token creators of this token
             // (if it's a base token it will be all the unique creators, if it's a control token it will be that single artist)                      
@@ -409,11 +433,13 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
 
     // Owner functions
     // Allow owner to accept the highest bid for a token
-    function acceptBid(uint256 tokenId) public {
+    function acceptBid(uint256 tokenId, uint256 minAcceptedAmount) public {
         // check if sender is owner/approved of token        
         require(_isApprovedOrOwner(msg.sender, tokenId));
         // check if there's a bid to accept
         require(pendingBids[tokenId].exists);
+        // check that the current pending bid amount is at least what the accepting owner expects
+        require(pendingBids[tokenId].amount >= minAcceptedAmount);
         // process the sale
         onTokenSold(tokenId, pendingBids[tokenId].amount, pendingBids[tokenId].bidder);
     }

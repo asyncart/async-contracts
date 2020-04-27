@@ -9,7 +9,8 @@ contract V1Token {
 
 //  functions needed from v2 contract
 contract V2Token {
-    function upgradeV1Token(uint256 tokenId, address v1TokenAddress, bool isControlToken, address to, 
+    function upgradeV1Token(uint256 artworkTokenId, address v1Address, bool isControlToken, address to, 
+        uint256 platformFirstPercentageForToken, uint256 platformSecondPercentageForToken, 
         address payable[] memory uniqueTokenCreatorsForToken) public {}
 }
 
@@ -31,7 +32,9 @@ contract TokenUpgrader {
     address public adminAddress;
 
     mapping(uint256 => bool) public isTokenReadyForUpgrade;
-    mapping(uint256 => bool) public isControlTokenMapping;        
+    mapping(uint256 => bool) public isControlTokenMapping;
+    mapping(uint256 => uint256) public platformFirstPercentageForToken;
+    mapping(uint256 => uint256) public platformSecondPercentageForToken;
     mapping(uint256 => address payable[]) public uniqueTokenCreatorMapping;
 
     constructor() public {
@@ -49,12 +52,17 @@ contract TokenUpgrader {
         v2TokenAddress = _v2TokenAddress;
     }
 
-    function prepareTokenForUpgrade(uint256 tokenId, bool isControlToken, address payable[] memory uniqueTokenCreators) public onlyAdmin {
+    function prepareTokenForUpgrade(uint256 tokenId, bool isControlToken, uint256 platformFirstSalePercentage,
+        uint256 platformSecondSalePercentage, address payable[] memory uniqueTokenCreators) public onlyAdmin {
         isTokenReadyForUpgrade[tokenId] = true;
 
         isControlTokenMapping[tokenId] = isControlToken;
 
         uniqueTokenCreatorMapping[tokenId] = uniqueTokenCreators;
+
+        platformFirstPercentageForToken[tokenId] = platformFirstSalePercentage;
+
+        platformSecondPercentageForToken[tokenId] = platformSecondSalePercentage;
     }
 
     function upgradeTokenList(uint256[] memory tokenIds) public {
@@ -75,7 +83,8 @@ contract TokenUpgrader {
 
         // call upgradeV1Token on the v2 contract -- this will mint the same token and send to the original owner
         V2Token(v2TokenAddress).upgradeV1Token(tokenId, v1TokenAddress, isControlTokenMapping[tokenId], 
-            msg.sender, uniqueTokenCreatorMapping[tokenId]);
+            msg.sender, platformFirstPercentageForToken[tokenId], platformSecondPercentageForToken[tokenId],
+            uniqueTokenCreatorMapping[tokenId]);
 
         // emit an upgrade event
         emit TokenUpgraded(tokenId, v1TokenAddress, v2TokenAddress);
