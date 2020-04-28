@@ -117,6 +117,8 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
 
     // track whether this token was sold the first time or not (used for determining whether to use first or secondary sale percentage)
     mapping(uint256 => bool) public tokenDidHaveFirstSale;
+    // if a token's URI has been locked or not
+    mapping(uint256 => bool) public tokenURILocked;
     // what tokenId creators are allowed to mint
     mapping(address => uint256) public creatorWhitelist;
     // map control token ID to its buy price
@@ -212,6 +214,24 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         platformSecondSalePercentages[tokenId] = platformSecondSalePercentage;
         // emit an event to notify that the platform percent for this token has changed
         emit PlatformSalePercentageUpdated(tokenId, platformFirstSalePercentage, platformSecondSalePercentage);
+    }
+
+    // Allow the platform to update a token's URI if it's not locked yet (for fixing tokens post mint process)
+    function updateTokenURI(uint256 tokenId, string memory tokenURI) public onlyPlatform {
+        // ensure that this token exists
+        require(_exists(tokenId));
+        // ensure that the URI for this token is not locked yet
+        require(tokenURILocked[tokenId] == false);
+        // update the token URI
+        super._setTokenURI(tokenId, tokenURI);
+    }
+
+    // Locks a token's URI from being updated
+    function lockTokenURI(uint256 tokenId) public onlyPlatform {
+        // ensure that this token exists
+        require(_exists(tokenId));
+        // lock this token's URI from being changed
+        tokenURILocked[tokenId] = true;
     }
 
     // Allows platform to change the percentage that artists receive on secondary sales
