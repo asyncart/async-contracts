@@ -250,7 +250,8 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     ) public {
         // Hard cap the number of levers a single control token can have
         require (leverMinValues.length <= 500, "Too many control levers.");
-
+        // Hard cap the number of collaborators a single control token can have
+        require (additionalCollaborators.length <= 50, "Too many collaborators.");
         // check that a control token exists for this token id
         require(controlTokenMapping[controlTokenId].exists, "No control token found");
         // ensure that this token is not setup yet
