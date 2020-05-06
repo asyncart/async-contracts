@@ -561,7 +561,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         (bool success, ) = recipient.call.value(amount)("2300");
         // if it failed, update their credit balance so they can pull it later
         if (success == false) {
-            failedTransferCredits[recipient] += amount;
+            failedTransferCredits[recipient] = failedTransferCredits[recipient].add(amount);
         }
     }
 
