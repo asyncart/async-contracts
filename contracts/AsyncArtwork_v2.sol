@@ -141,6 +141,8 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     uint256 public artistSecondSalePercentage;
     // gets incremented to placehold for tokens not minted yet
     uint256 public expectedTokenSupply;
+    // the minimum % increase for new bids coming
+    uint256 public minBidIncreasePercent;
     // the address of the platform (for receving commissions and royalties)
     address payable public platformAddress;
     // the address of the contract that can upgrade from v1 to v2 tokens
@@ -153,6 +155,9 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
 
         // starting royalty amounts
         artistSecondSalePercentage = 10;
+
+        // intitialize the minimum bid increase percent
+        minBidIncreasePercent = 1;
 
         // by default, the platformAddress is the address that mints this contract
         platformAddress = msg.sender;
@@ -187,7 +192,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         // reserve the tokenID for this creator
         creatorWhitelist[creator] = forTokenId;
         // increase the expected token supply
-        expectedTokenSupply = forTokenId + layerCount + 1;
+        expectedTokenSupply = forTokenId.add(layerCount).add(1);
         // define the platform percentages for this token here
         platformFirstSalePercentages[forTokenId] = platformFirstSalePercentage;
         platformSecondSalePercentages[forTokenId] = platformSecondSalePercentage;
@@ -215,7 +220,12 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         // emit an event to notify that the platform percent for this token has changed
         emit PlatformSalePercentageUpdated(tokenId, platformFirstSalePercentage, platformSecondSalePercentage);
     }
-
+    // Allows the platform to change the minimum percent increase for incoming bids
+    function updateMinimumBidIncreasePercent(uint256 _minBidIncreasePercent) public onlyPlatform {
+        require((_minBidIncreasePercent > 0) && (_minBidIncreasePercent <= 50), "Bid increases must be within 0-50%");
+        // set the new bid increase percent
+        minBidIncreasePercent = _minBidIncreasePercent;
+    }
     // Allow the platform to update a token's URI if it's not locked yet (for fixing tokens post mint process)
     function updateTokenURI(uint256 tokenId, string memory tokenURI) public onlyPlatform {
         // ensure that this token exists
@@ -373,8 +383,8 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         require(_isApprovedOrOwner(msg.sender, tokenId) == false);
         // check if there's a high bid
         if (pendingBids[tokenId].exists) {
-            // enforce that this bid is higher
-            require(msg.value > pendingBids[tokenId].amount, "Bid must be > than current bid");
+            // enforce that this bid is higher by at least the minimum required percent increase
+            require(msg.value >= (pendingBids[tokenId].amount.mul(minBidIncreasePercent.add(100)).div(100)), "Bid must increase by min %");
             // Return bid amount back to bidder
             safeFundsTransfer(pendingBids[tokenId].bidder, pendingBids[tokenId].amount);
         }
