@@ -184,7 +184,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
 
     // reserve a tokenID and layer count for a creator. Define a platform royalty percentage per art piece (some pieces have higher or lower amount)
     function whitelistTokenForCreator(address creator, uint256 forTokenId, uint256 layerCount, 
-        uint256 platformFirstSalePercentage, uint256 platformSecondSalePercentage) public onlyPlatform {
+        uint256 platformFirstSalePercentage, uint256 platformSecondSalePercentage) external onlyPlatform {
         // the tokenID we're reserving must be the current expected token supply
         require(forTokenId == expectedTokenSupply);
         // Async pieces must have at least 1 layer
@@ -199,21 +199,21 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     }
 
     // Allows the current platform address to update to something different
-    function updatePlatformAddress(address payable newPlatformAddress) public onlyPlatform {
+    function updatePlatformAddress(address payable newPlatformAddress) external onlyPlatform {
         platformAddress = newPlatformAddress;
 
         emit PlatformAddressUpdated(newPlatformAddress);
     }
 
     // Allows platform to waive the first sale requirement for a token (for charity events, special cases, etc)
-    function waiveFirstSaleRequirement(uint256 tokenId) public onlyPlatform {
+    function waiveFirstSaleRequirement(uint256 tokenId) external onlyPlatform {
         // This allows the token sale proceeds to go to the current owner (rather than be distributed amongst the token's creators)
         tokenDidHaveFirstSale[tokenId] = true;
     }
 
     // Allows platform to change the royalty percentage for a specific token
     function updatePlatformSalePercentage(uint256 tokenId, uint256 platformFirstSalePercentage, 
-        uint256 platformSecondSalePercentage) public onlyPlatform {
+        uint256 platformSecondSalePercentage) external onlyPlatform {
         // set the percentages for this token
         platformFirstSalePercentages[tokenId] = platformFirstSalePercentage;
         platformSecondSalePercentages[tokenId] = platformSecondSalePercentage;
@@ -221,13 +221,13 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         emit PlatformSalePercentageUpdated(tokenId, platformFirstSalePercentage, platformSecondSalePercentage);
     }
     // Allows the platform to change the minimum percent increase for incoming bids
-    function updateMinimumBidIncreasePercent(uint256 _minBidIncreasePercent) public onlyPlatform {
+    function updateMinimumBidIncreasePercent(uint256 _minBidIncreasePercent) external onlyPlatform {
         require((_minBidIncreasePercent > 0) && (_minBidIncreasePercent <= 50), "Bid increases must be within 0-50%");
         // set the new bid increase percent
         minBidIncreasePercent = _minBidIncreasePercent;
     }
     // Allow the platform to update a token's URI if it's not locked yet (for fixing tokens post mint process)
-    function updateTokenURI(uint256 tokenId, string memory tokenURI) public onlyPlatform {
+    function updateTokenURI(uint256 tokenId, string calldata tokenURI) external onlyPlatform {
         // ensure that this token exists
         require(_exists(tokenId));
         // ensure that the URI for this token is not locked yet
@@ -237,7 +237,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     }
 
     // Locks a token's URI from being updated
-    function lockTokenURI(uint256 tokenId) public onlyPlatform {
+    function lockTokenURI(uint256 tokenId) external onlyPlatform {
         // ensure that this token exists
         require(_exists(tokenId));
         // lock this token's URI from being changed
@@ -245,19 +245,19 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     }
 
     // Allows platform to change the percentage that artists receive on secondary sales
-    function updateArtistSecondSalePercentage(uint256 _artistSecondSalePercentage) public onlyPlatform {
+    function updateArtistSecondSalePercentage(uint256 _artistSecondSalePercentage) external onlyPlatform {
         // update the percentage that artists get on secondary sales
         artistSecondSalePercentage = _artistSecondSalePercentage;
         // emit an event to notify that the artist second sale percent has updated
         emit ArtistSecondSalePercentUpdated(artistSecondSalePercentage);
     }
 
-    function setupControlToken(uint256 controlTokenId, string memory controlTokenURI,
-        int256[] memory leverMinValues,
-        int256[] memory leverMaxValues,
-        int256[] memory leverStartValues,
-        address payable[] memory additionalCollaborators
-    ) public {
+    function setupControlToken(uint256 controlTokenId, string calldata controlTokenURI,
+        int256[] calldata leverMinValues,
+        int256[] calldata leverMaxValues,
+        int256[] calldata leverStartValues,
+        address payable[] calldata additionalCollaborators
+    ) external {
         // Hard cap the number of levers a single control token can have
         require (leverMinValues.length <= 500, "Too many control levers.");
         // Hard cap the number of collaborators a single control token can have
@@ -298,7 +298,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     // upgrade a token from the v1 contract to this v2 version
     function upgradeV1Token(uint256 artworkTokenId, address v1Address, bool isControlToken, address to, 
         uint256 platformFirstPercentageForToken, uint256 platformSecondPercentageForToken, 
-        address payable[] memory uniqueTokenCreatorsForToken) public {
+        address payable[] calldata uniqueTokenCreatorsForToken) external {
         // get reference to v1 token contract
         AsyncArtwork_v1 v1Token = AsyncArtwork_v1(v1Address);
 
@@ -332,8 +332,8 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         super._setTokenURI(artworkTokenId, v1Token.tokenURI(artworkTokenId));
     }
 
-    function mintArtwork(uint256 artworkTokenId, string memory artworkTokenURI, address payable[] memory controlTokenArtists)
-        public onlyWhitelistedCreator(artworkTokenId) {
+    function mintArtwork(uint256 artworkTokenId, string calldata artworkTokenURI, address payable[] calldata controlTokenArtists)
+        external onlyWhitelistedCreator(artworkTokenId) {
         // Can't mint a token with ID 0 anymore
         require(artworkTokenId > 0);
         // Mint the token that represents ownership of the entire artwork    
@@ -376,7 +376,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         }
     }
     // Bidder functions
-    function bid(uint256 tokenId) public payable {
+    function bid(uint256 tokenId) external payable {
         // don't allow bids of 0
         require(msg.value > 0);
         // don't let owners/approved bid on their own tokens
@@ -394,7 +394,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         emit BidProposed(tokenId, msg.value, msg.sender);
     }
     // allows an address with a pending bid to withdraw it
-    function withdrawBid(uint256 tokenId) public {
+    function withdrawBid(uint256 tokenId) external {
         // check that there is a bid from the sender to withdraw (also allows platform address to withdraw a bid on someone's behalf)
         require(pendingBids[tokenId].exists && ((pendingBids[tokenId].bidder == msg.sender) || (msg.sender == platformAddress)));
         // Return bid amount back to bidder
@@ -405,7 +405,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         emit BidWithdrawn(tokenId);
     }
     // Buy the artwork for the currently set price
-    function takeBuyPrice(uint256 tokenId) public payable {
+    function takeBuyPrice(uint256 tokenId) external payable {
         // don't let owners/approved buy their own tokens
         require(_isApprovedOrOwner(msg.sender, tokenId) == false);
         // get the sale amount
@@ -467,7 +467,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
 
     // Owner functions
     // Allow owner to accept the highest bid for a token
-    function acceptBid(uint256 tokenId, uint256 minAcceptedAmount) public {
+    function acceptBid(uint256 tokenId, uint256 minAcceptedAmount) external {
         // check if sender is owner/approved of token        
         require(_isApprovedOrOwner(msg.sender, tokenId));
         // check if there's a bid to accept
@@ -479,7 +479,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     }
 
     // Allows owner of a control token to set an immediate buy price. Set to 0 to reset.
-    function makeBuyPrice(uint256 tokenId, uint256 amount) public {
+    function makeBuyPrice(uint256 tokenId, uint256 amount) external {
         // check if sender is owner/approved of token        
         require(_isApprovedOrOwner(msg.sender, tokenId));
         // set the buy price
@@ -489,7 +489,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     }
 
     // return the min, max, and current value of a control lever
-    function getControlToken(uint256 controlTokenId) public view returns(int256[] memory) {
+    function getControlToken(uint256 controlTokenId) external view returns(int256[] memory) {
         require(controlTokenMapping[controlTokenId].exists);
 
         ControlToken storage controlToken = controlTokenMapping[controlTokenId];
@@ -513,7 +513,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     }
 
     // anyone can grant permission to another address to control a specific token on their behalf. Set to Address(0) to reset.
-    function grantControlPermission(uint256 tokenId, address permissioned) public {
+    function grantControlPermission(uint256 tokenId, address permissioned) external {
         permissionedControllers[msg.sender][tokenId] = permissioned;
 
         emit PermissionUpdated(tokenId, msg.sender, permissioned);
@@ -521,7 +521,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
 
     // Allows owner (or permissioned user) of a control token to update its lever values
     // Optionally accept a payment to increase speed of rendering priority
-    function useControlToken(uint256 controlTokenId, uint256[] memory leverIds, int256[] memory newValues) public payable {
+    function useControlToken(uint256 controlTokenId, uint256[] calldata leverIds, int256[] calldata newValues) external payable {
         // check if sender is owner/approved of token OR if they're a permissioned controller for the token owner      
         require(_isApprovedOrOwner(msg.sender, controlTokenId) || (permissionedControllers[ownerOf(controlTokenId)][controlTokenId] == msg.sender),
             "Owner or permissioned only");
@@ -558,7 +558,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     }
 
     // Allows a user to withdraw all failed transaction credits
-    function withdrawAllFailedCredits() public {
+    function withdrawAllFailedCredits() external {
         uint256 amount = failedTransferCredits[msg.sender];
 
         require(amount != 0);
