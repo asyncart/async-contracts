@@ -16,5 +16,5 @@ module.exports = async function(deployer) {
 
   let v2_deployed = await deployer.deploy(AsyncArtwork_v2);
 
-  await deployer.deploy(TokenUpgrader);
+  await deployer.deploy(TokenUpgrader, v1_deployed.address);
 };

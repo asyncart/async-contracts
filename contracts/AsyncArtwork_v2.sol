@@ -562,7 +562,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     // Safely transfer funds and if fail then store that amount as credits for a later pull
     function safeFundsTransfer(address payable recipient, uint256 amount) internal {
         // attempt to send the funds to the recipient
-        (bool success, ) = recipient.call.value(amount)("2300");
+        (bool success, ) = recipient.call.value(amount).gas(2300)("");
         // if it failed, update their credit balance so they can pull it later
         if (success == false) {
             failedTransferCredits[recipient] = failedTransferCredits[recipient].add(amount);
