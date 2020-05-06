@@ -37,8 +37,12 @@ contract TokenUpgrader {
     mapping(uint256 => uint256) public platformSecondPercentageForToken;
     mapping(uint256 => address payable[]) public uniqueTokenCreatorMapping;
 
-    constructor() public {
+    constructor(address _v1TokenAddress) public {
         adminAddress = msg.sender;
+
+        require(_v1TokenAddress != address(0), "V1 can't be a burn address.");
+
+        v1TokenAddress = _v1TokenAddress;
     }
 
     // modifier for only allowing the admin to call
@@ -47,8 +51,10 @@ contract TokenUpgrader {
         _;
     }
 
-    function setupAddresses(address _v1TokenAddress, address _v2TokenAddress) public onlyAdmin {
-        v1TokenAddress = _v1TokenAddress;
+    function setupV2Address(address _v2TokenAddress) public onlyAdmin {        
+        require(_v2TokenAddress != address(0), "V2 can't be a burn address.");
+        require(v2TokenAddress == address(0), "V2 address has already been initialized.");
+        
         v2TokenAddress = _v2TokenAddress;
     }
 
