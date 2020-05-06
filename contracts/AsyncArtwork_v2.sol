@@ -556,7 +556,8 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
 
         failedTransferCredits[msg.sender] = 0;
 
-        msg.sender.transfer(amount);
+        (bool successfulWithdraw, ) = msg.sender.call.value(amount)("");
+        require(successfulWithdraw);
     }
 
     // Safely transfer funds and if fail then store that amount as credits for a later pull
