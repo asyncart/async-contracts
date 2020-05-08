@@ -25,9 +25,9 @@ contract TokenUpgrader {
     );
 
     // the address of the v1 token
-    address public v1TokenAddress;
+    V1Token public v1TokenAddress;
     // the address of the v2 token
-    address public v2TokenAddress;
+    V2Token public v2TokenAddress;
     // the admin address of who can setup descriptors for the tokens
     address public adminAddress;
 
@@ -37,10 +37,8 @@ contract TokenUpgrader {
     mapping(uint256 => uint256) public platformSecondPercentageForToken;
     mapping(uint256 => address payable[]) public uniqueTokenCreatorMapping;
 
-    constructor(address _v1TokenAddress) public {
+    constructor(V1Token _v1TokenAddress) public {
         adminAddress = msg.sender;
-
-        require(_v1TokenAddress != address(0), "V1 can't be a burn address.");
 
         v1TokenAddress = _v1TokenAddress;
     }
@@ -51,9 +49,8 @@ contract TokenUpgrader {
         _;
     }
 
-    function setupV2Address(address _v2TokenAddress) public onlyAdmin {        
-        require(_v2TokenAddress != address(0), "V2 can't be a burn address.");
-        require(v2TokenAddress == address(0), "V2 address has already been initialized.");
+    function setupV2Address(V2Token _v2TokenAddress) public onlyAdmin {
+        require(address(v2TokenAddress) == address(0), "V2 address has already been initialized.");
         
         v2TokenAddress = _v2TokenAddress;
     }
@@ -82,17 +79,17 @@ contract TokenUpgrader {
         require(isTokenReadyForUpgrade[tokenId], "Token not ready for upgrade.");
 
         // require the caller of this function to be the token owner
-        require(V1Token(v1TokenAddress).ownerOf(tokenId) == msg.sender, "Sender doesn't own token.");
+        require(v1TokenAddress.ownerOf(tokenId) == msg.sender, "Sender doesn't own token.");
 
         // transfer the v1 token to be owned by this contract (effectively burning it since this contract can't send it back out)
-        V1Token(v1TokenAddress).transferFrom(msg.sender, address(this), tokenId);
+        v1TokenAddress.transferFrom(msg.sender, address(this), tokenId);
 
         // call upgradeV1Token on the v2 contract -- this will mint the same token and send to the original owner
-        V2Token(v2TokenAddress).upgradeV1Token(tokenId, v1TokenAddress, isControlTokenMapping[tokenId], 
+        v2TokenAddress.upgradeV1Token(tokenId, address(v1TokenAddress), isControlTokenMapping[tokenId], 
             msg.sender, platformFirstPercentageForToken[tokenId], platformSecondPercentageForToken[tokenId],
             uniqueTokenCreatorMapping[tokenId]);
 
         // emit an upgrade event
-        emit TokenUpgraded(tokenId, v1TokenAddress, v2TokenAddress);
+        emit TokenUpgraded(tokenId, address(v1TokenAddress), address(v2TokenAddress));
     }
 }
