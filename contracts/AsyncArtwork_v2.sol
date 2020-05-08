@@ -303,7 +303,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         AsyncArtwork_v1 v1Token = AsyncArtwork_v1(v1Address);
 
         // require that only the upgrader address is calling this method
-        require(msg.sender == upgraderAddress);
+        require(msg.sender == upgraderAddress, "Only upgrader can call.");
 
         // preserve the unique token creators
         uniqueTokenCreators[artworkTokenId] = uniqueTokenCreatorsForToken;
@@ -311,12 +311,18 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         if (isControlToken) {
             // preserve the control token details if it's a control token
             int256[] memory controlToken = v1Token.getControlToken(artworkTokenId);
-            
+            // Require control token to be a valid size (multiple of 3)
+            require(controlToken.length % 3 == 0, "Invalid control token.");
+            // Require control token to have at least 1 lever
+            require(controlToken.length > 0, "Control token must have levers");            
+            // Setup the control token
             controlTokenMapping[artworkTokenId] = ControlToken(controlToken.length / 3, true, true);
 
-            for (uint256 k = 0; k < controlToken.length / 3; k++) {
-                controlTokenMapping[artworkTokenId].levers[k] = ControlLever(controlToken[k * 3],
-                    controlToken[k * 3 + 1], controlToken[k * 3 + 2], true);
+            // set each lever for the control token. getControlToken returns levers like:
+            // [minValue, maxValue, curValue, minValue, maxValue, curValue, ...] so they always come in groups of 3
+            for (uint256 k = 0; k < controlToken.length; k+=3) {
+                controlTokenMapping[artworkTokenId].levers[k / 3] = ControlLever(controlToken[k],
+                    controlToken[k + 1], controlToken[k + 2], true);
             }
         }
 
@@ -490,7 +496,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
 
     // return the min, max, and current value of a control lever
     function getControlToken(uint256 controlTokenId) external view returns(int256[] memory) {
-        require(controlTokenMapping[controlTokenId].exists);
+        require(controlTokenMapping[controlTokenId].exists, "Token does not exist.");
 
         ControlToken storage controlToken = controlTokenMapping[controlTokenId];
 
