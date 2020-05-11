@@ -73,8 +73,10 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         uint256 tokenId,
         // an optional amount that the updater sent to boost priority of the rendering
         uint256 priorityTip,
+        // the number of times this control lever can now be updated
+        int256 numRemainingUpdates,
         // the ids of the levers that were updated
-        uint256[] leverIds,
+        uint256[] leverIds,        
         // the previous values that the levers had before this update (for clients who want to animate the change)
         int256[] previousValues,
         // the new updated value
@@ -85,6 +87,8 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     struct ControlToken {
         // number that tracks how many levers there are
         uint256 numControlLevers;
+        // The number of update calls this token has (-1 for infinite)
+        int256 numRemainingUpdates;
         // false by default, true once instantiated
         bool exists;
         // false by default, true once setup by the artist
@@ -256,6 +260,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         int256[] calldata leverMinValues,
         int256[] calldata leverMaxValues,
         int256[] calldata leverStartValues,
+        int256 numAllowedUpdates,
         address payable[] calldata additionalCollaborators
     ) external {
         // Hard cap the number of levers a single control token can have
@@ -270,12 +275,14 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         require(uniqueTokenCreators[controlTokenId][0] == msg.sender, "Must be control token artist");
         // enforce that the length of all the array lengths are equal
         require((leverMinValues.length == leverMaxValues.length) && (leverMaxValues.length == leverStartValues.length), "Values array mismatch");
+        // require the number of allowed updates to be infinite (-1) or some finite number
+        require((numAllowedUpdates == -1) || (numAllowedUpdates > 0), "Invalid allowed updates");
         // mint the control token here
         super._safeMint(msg.sender, controlTokenId);
         // set token URI
         super._setTokenURI(controlTokenId, controlTokenURI);        
         // create the control token
-        controlTokenMapping[controlTokenId] = ControlToken(leverStartValues.length, true, true);
+        controlTokenMapping[controlTokenId] = ControlToken(leverStartValues.length, numAllowedUpdates, true, true);
         // create the control token levers now
         for (uint256 k = 0; k < leverStartValues.length; k++) {
             // enforce that maxValue is greater than or equal to minValue
@@ -316,7 +323,8 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
             // Require control token to have at least 1 lever
             require(controlToken.length > 0, "Control token must have levers");            
             // Setup the control token
-            controlTokenMapping[artworkTokenId] = ControlToken(controlToken.length / 3, true, true);
+            // Use -1 for numRemainingUpdates since v1 tokens were infinite use
+            controlTokenMapping[artworkTokenId] = ControlToken(controlToken.length / 3, -1, true, true);
 
             // set each lever for the control token. getControlToken returns levers like:
             // [minValue, maxValue, curValue, minValue, maxValue, curValue, ...] so they always come in groups of 3
@@ -359,7 +367,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
             // add this control token artist to the unique creator list for that control token
             uniqueTokenCreators[controlTokenId].push(controlTokenArtists[i]);
             // stub in an existing control token so exists is true
-            controlTokenMapping[controlTokenId] = ControlToken(0, true, false);
+            controlTokenMapping[controlTokenId] = ControlToken(0, 0, true, false);
 
             // Layer control tokens use the same royalty percentage as the master token
             platformFirstSalePercentages[controlTokenId] = platformFirstSalePercentages[artworkTokenId];
@@ -494,6 +502,13 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         emit BuyPriceSet(tokenId, amount);
     }
 
+    // return the number of times that a control token can be used
+    function getNumRemainingControlUpdates(uint256 controlTokenId) external view returns (int256) {
+        require(controlTokenMapping[controlTokenId].exists, "Token does not exist.");
+
+        return controlTokenMapping[controlTokenId].numRemainingUpdates;
+    }
+
     // return the min, max, and current value of a control lever
     function getControlToken(uint256 controlTokenId) external view returns(int256[] memory) {
         require(controlTokenMapping[controlTokenId].exists, "Token does not exist.");
@@ -531,6 +546,12 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         // check if sender is owner/approved of token OR if they're a permissioned controller for the token owner      
         require(_isApprovedOrOwner(msg.sender, controlTokenId) || (permissionedControllers[ownerOf(controlTokenId)][controlTokenId] == msg.sender),
             "Owner or permissioned only");
+        // check if control exists
+        require(controlTokenMapping[controlTokenId].exists, "Token does not exist.");
+        // get the control token reference
+        ControlToken storage controlToken = controlTokenMapping[controlTokenId];
+        // check that number of uses for control token is either infinite or is positive
+        require((controlToken.numRemainingUpdates == -1) || (controlToken.numRemainingUpdates > 0), "No more updates allowed");        
         // collect the previous lever values for the event emit below
         int256[] memory previousValues = new int256[](newValues.length);
 
@@ -559,8 +580,14 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
             safeFundsTransfer(platformAddress, msg.value);
         }
 
+        // if this control token is finite in its uses
+        if (controlToken.numRemainingUpdates > 0) {
+            // decrease it down by 1
+            controlToken.numRemainingUpdates = controlToken.numRemainingUpdates - 1;
+        }
+
         // emit event
-        emit ControlLeverUpdated(controlTokenId, msg.value, leverIds, previousValues, newValues);
+        emit ControlLeverUpdated(controlTokenId, msg.value, controlToken.numRemainingUpdates, leverIds, previousValues, newValues);
     }
 
     // Allows a user to withdraw all failed transaction credits
