@@ -9,9 +9,9 @@ contract V1Token {
 
 //  functions needed from v2 contract
 contract V2Token {
-    function upgradeV1Token(uint256 artworkTokenId, address v1Address, bool isControlToken, address to, 
-        uint256 platformFirstPercentageForToken, uint256 platformSecondPercentageForToken, 
-        address payable[] memory uniqueTokenCreatorsForToken) public {}
+    function upgradeV1Token(uint256 tokenId, address v1Address, bool isControlToken, address to, 
+        uint256 platformFirstPercentageForToken, uint256 platformSecondPercentageForToken, bool hasTokenHadFirstSale,
+        address payable[] calldata uniqueTokenCreatorsForToken) external {}
 }
 
 // Copyright (C) 2020 Asynchronous Art, Inc.
@@ -33,6 +33,7 @@ contract TokenUpgrader {
 
     mapping(uint256 => bool) public isTokenReadyForUpgrade;
     mapping(uint256 => bool) public isControlTokenMapping;
+    mapping(uint256 => bool) public hasTokenHadFirstSale;
     mapping(uint256 => uint256) public platformFirstPercentageForToken;
     mapping(uint256 => uint256) public platformSecondPercentageForToken;
     mapping(uint256 => address payable[]) public uniqueTokenCreatorMapping;
@@ -56,10 +57,12 @@ contract TokenUpgrader {
     }
 
     function prepareTokenForUpgrade(uint256 tokenId, bool isControlToken, uint256 platformFirstSalePercentage,
-        uint256 platformSecondSalePercentage, address payable[] memory uniqueTokenCreators) public onlyAdmin {
+        uint256 platformSecondSalePercentage, bool hasHadFirstSale, address payable[] memory uniqueTokenCreators) public onlyAdmin {
         isTokenReadyForUpgrade[tokenId] = true;
 
         isControlTokenMapping[tokenId] = isControlToken;
+
+        hasTokenHadFirstSale[tokenId] = hasHadFirstSale;
 
         uniqueTokenCreatorMapping[tokenId] = uniqueTokenCreators;
 
@@ -87,7 +90,7 @@ contract TokenUpgrader {
         // call upgradeV1Token on the v2 contract -- this will mint the same token and send to the original owner
         v2TokenAddress.upgradeV1Token(tokenId, address(v1TokenAddress), isControlTokenMapping[tokenId], 
             msg.sender, platformFirstPercentageForToken[tokenId], platformSecondPercentageForToken[tokenId],
-            uniqueTokenCreatorMapping[tokenId]);
+            hasTokenHadFirstSale[tokenId], uniqueTokenCreatorMapping[tokenId]);
 
         // emit an upgrade event
         emit TokenUpgraded(tokenId, address(v1TokenAddress), address(v2TokenAddress));

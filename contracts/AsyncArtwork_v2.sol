@@ -303,8 +303,8 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     }
 
     // upgrade a token from the v1 contract to this v2 version
-    function upgradeV1Token(uint256 artworkTokenId, address v1Address, bool isControlToken, address to, 
-        uint256 platformFirstPercentageForToken, uint256 platformSecondPercentageForToken, 
+    function upgradeV1Token(uint256 tokenId, address v1Address, bool isControlToken, address to, 
+        uint256 platformFirstPercentageForToken, uint256 platformSecondPercentageForToken, bool hasTokenHadFirstSale,
         address payable[] calldata uniqueTokenCreatorsForToken) external {
         // get reference to v1 token contract
         AsyncArtwork_v1 v1Token = AsyncArtwork_v1(v1Address);
@@ -313,37 +313,40 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         require(msg.sender == upgraderAddress, "Only upgrader can call.");
 
         // preserve the unique token creators
-        uniqueTokenCreators[artworkTokenId] = uniqueTokenCreatorsForToken;
+        uniqueTokenCreators[tokenId] = uniqueTokenCreatorsForToken;
 
         if (isControlToken) {
             // preserve the control token details if it's a control token
-            int256[] memory controlToken = v1Token.getControlToken(artworkTokenId);
+            int256[] memory controlToken = v1Token.getControlToken(tokenId);
             // Require control token to be a valid size (multiple of 3)
             require(controlToken.length % 3 == 0, "Invalid control token.");
             // Require control token to have at least 1 lever
             require(controlToken.length > 0, "Control token must have levers");            
             // Setup the control token
             // Use -1 for numRemainingUpdates since v1 tokens were infinite use
-            controlTokenMapping[artworkTokenId] = ControlToken(controlToken.length / 3, -1, true, true);
+            controlTokenMapping[tokenId] = ControlToken(controlToken.length / 3, -1, true, true);
 
             // set each lever for the control token. getControlToken returns levers like:
             // [minValue, maxValue, curValue, minValue, maxValue, curValue, ...] so they always come in groups of 3
             for (uint256 k = 0; k < controlToken.length; k+=3) {
-                controlTokenMapping[artworkTokenId].levers[k / 3] = ControlLever(controlToken[k],
+                controlTokenMapping[tokenId].levers[k / 3] = ControlLever(controlToken[k],
                     controlToken[k + 1], controlToken[k + 2], true);
             }
         }
 
         // Set the royalty percentage for this token
-        platformFirstSalePercentages[artworkTokenId] = platformFirstPercentageForToken;
+        platformFirstSalePercentages[tokenId] = platformFirstPercentageForToken;
 
-        platformSecondSalePercentages[artworkTokenId] = platformSecondPercentageForToken;
+        platformSecondSalePercentages[tokenId] = platformSecondPercentageForToken;
+
+        // whether this token has already had its first sale
+        tokenDidHaveFirstSale[tokenId] = hasTokenHadFirstSale;
 
         // Mint and transfer the token to the original v1 token owner
-        super._safeMint(to, artworkTokenId);
+        super._safeMint(to, tokenId);
 
         // set the same token URI
-        super._setTokenURI(artworkTokenId, v1Token.tokenURI(artworkTokenId));
+        super._setTokenURI(tokenId, v1Token.tokenURI(tokenId));
     }
 
     function mintArtwork(uint256 artworkTokenId, string calldata artworkTokenURI, address payable[] calldata controlTokenArtists)
