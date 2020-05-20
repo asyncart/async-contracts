@@ -2,7 +2,7 @@ pragma solidity ^0.5.12;
 
 //  functions needed from the v1 contract
 contract V1Token {
-    function ownerOf(uint256 tokenId) public view returns (address) {}
+    function isApprovedForAll(address owner, address operator) public view returns (bool) {}
 
     function transferFrom(address from, address to, uint256 tokenId) public {}
 }
@@ -71,25 +71,25 @@ contract TokenUpgrader {
         platformSecondPercentageForToken[tokenId] = platformSecondSalePercentage;
     }
 
-    function upgradeTokenList(uint256[] memory tokenIds) public {
+    function upgradeTokenList(uint256[] memory tokenIds, address tokenOwner) public {
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            upgradeToken(tokenIds[i]);
+            upgradeToken(tokenIds[i], tokenOwner);
         }
     }
 
-    function upgradeToken(uint256 tokenId) public {
+    function upgradeToken(uint256 tokenId, address tokenOwner) public {
         // token must be ready to be upgraded
         require(isTokenReadyForUpgrade[tokenId], "Token not ready for upgrade.");
 
-        // require the caller of this function to be the token owner
-        require(v1TokenAddress.ownerOf(tokenId) == msg.sender, "Sender doesn't own token.");
+        // require the caller of this function to be the token owner or approved to transfer all of the owner's tokens
+        require((tokenOwner == msg.sender) || v1TokenAddress.isApprovedForAll(tokenOwner, msg.sender), "Not owner or approved.");
 
         // transfer the v1 token to be owned by this contract (effectively burning it since this contract can't send it back out)
-        v1TokenAddress.transferFrom(msg.sender, address(this), tokenId);
+        v1TokenAddress.transferFrom(tokenOwner, address(this), tokenId);
 
         // call upgradeV1Token on the v2 contract -- this will mint the same token and send to the original owner
         v2TokenAddress.upgradeV1Token(tokenId, address(v1TokenAddress), isControlTokenMapping[tokenId], 
-            msg.sender, platformFirstPercentageForToken[tokenId], platformSecondPercentageForToken[tokenId],
+            tokenOwner, platformFirstPercentageForToken[tokenId], platformSecondPercentageForToken[tokenId],
             hasTokenHadFirstSale[tokenId], uniqueTokenCreatorMapping[tokenId]);
 
         // emit an upgrade event
