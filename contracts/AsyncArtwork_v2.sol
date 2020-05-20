@@ -428,7 +428,12 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     // allows an address with a pending bid to withdraw it
     function withdrawBid(uint256 tokenId) external {
         // check that there is a bid from the sender to withdraw (also allows platform address to withdraw a bid on someone's behalf)
-        require(pendingBids[tokenId].exists && ((pendingBids[tokenId].bidder == msg.sender) || (msg.sender == platformAddress)));
+        require((pendingBids[tokenId].bidder == msg.sender) || (msg.sender == platformAddress));
+        // attempt to withdraw the bid
+        _withdrawBid(tokenId);        
+    }
+    function _withdrawBid(uint256 tokenId) internal {
+        require(pendingBids[tokenId].exists);
         // Return bid amount back to bidder
         safeFundsTransfer(pendingBids[tokenId].bidder, pendingBids[tokenId].amount);
         // clear highest bid
@@ -436,6 +441,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         // emit an event when the highest bid is withdrawn
         emit BidWithdrawn(tokenId);
     }
+
     // Buy the artwork for the currently set price
     function takeBuyPrice(uint256 tokenId) external payable {
         // don't let owners/approved buy their own tokens
@@ -602,6 +608,11 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         if (controlToken.numRemainingUpdates > 0) {
             // decrease it down by 1
             controlToken.numRemainingUpdates = controlToken.numRemainingUpdates - 1;
+
+            // since we used one of those updates, withdraw any existing bid for this token if exists
+            if (pendingBids[controlTokenId].exists) {
+                _withdrawBid(controlTokenId);
+            }
         }
 
         // emit event
