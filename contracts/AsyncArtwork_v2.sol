@@ -119,12 +119,17 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         bool exists;
     }
 
+    struct WhitelistReservation {
+        // the address of the creator
+        address creator;
+        // the amount of layers they're expected to mint
+        uint256 layerCount;
+    }
+
     // track whether this token was sold the first time or not (used for determining whether to use first or secondary sale percentage)
     mapping(uint256 => bool) public tokenDidHaveFirstSale;
     // if a token's URI has been locked or not
-    mapping(uint256 => bool) public tokenURILocked;
-    // what tokenId creators are allowed to mint
-    mapping(address => uint256) public creatorWhitelist;
+    mapping(uint256 => bool) public tokenURILocked;    
     // map control token ID to its buy price
     mapping(uint256 => uint256) public buyPrices;    
     // mapping of addresses to credits for failed transfers
@@ -133,6 +138,8 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     mapping(uint256 => uint256) public platformFirstSalePercentages;
     // mapping of tokenId to percentage of sale that the platform gets on secondary sales
     mapping(uint256 => uint256) public platformSecondSalePercentages;
+    // what tokenId creators are allowed to mint (and how many layers)
+    mapping(uint256 => WhitelistReservation) public creatorWhitelist;
     // for each token, holds an array of the creator collaborators. For layer tokens it will likely just be [artist], for master tokens it may hold multiples
     mapping(uint256 => address payable[]) public uniqueTokenCreators;    
     // map a control token ID to its highest bid
@@ -181,25 +188,26 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         _;
     }
 
-    modifier onlyWhitelistedCreator(uint256 forTokenId) {
-        require(creatorWhitelist[msg.sender] == forTokenId);
+    modifier onlyWhitelistedCreator(uint256 masterTokenId, uint256 layerCount) {
+        require(creatorWhitelist[masterTokenId].creator == msg.sender);
+        require(creatorWhitelist[masterTokenId].layerCount == layerCount);
         _;
     }
 
     // reserve a tokenID and layer count for a creator. Define a platform royalty percentage per art piece (some pieces have higher or lower amount)
-    function whitelistTokenForCreator(address creator, uint256 forTokenId, uint256 layerCount, 
+    function whitelistTokenForCreator(address creator, uint256 masterTokenId, uint256 layerCount, 
         uint256 platformFirstSalePercentage, uint256 platformSecondSalePercentage) external onlyPlatform {
         // the tokenID we're reserving must be the current expected token supply
-        require(forTokenId == expectedTokenSupply);
+        require(masterTokenId == expectedTokenSupply);
         // Async pieces must have at least 1 layer
         require (layerCount > 0);
         // reserve the tokenID for this creator
-        creatorWhitelist[creator] = forTokenId;
+        creatorWhitelist[masterTokenId] = WhitelistReservation(creator, layerCount);
         // increase the expected token supply
-        expectedTokenSupply = forTokenId.add(layerCount).add(1);
+        expectedTokenSupply = masterTokenId.add(layerCount).add(1);
         // define the platform percentages for this token here
-        platformFirstSalePercentages[forTokenId] = platformFirstSalePercentage;
-        platformSecondSalePercentages[forTokenId] = platformSecondSalePercentage;
+        platformFirstSalePercentages[masterTokenId] = platformFirstSalePercentage;
+        platformSecondSalePercentages[masterTokenId] = platformSecondSalePercentage;
     }
 
     // Allows the current platform address to update to something different
@@ -349,45 +357,43 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         super._setTokenURI(tokenId, v1Token.tokenURI(tokenId));
     }
 
-    function mintArtwork(uint256 artworkTokenId, string calldata artworkTokenURI, address payable[] calldata controlTokenArtists)
-        external onlyWhitelistedCreator(artworkTokenId) {
+    function mintArtwork(uint256 masterTokenId, string calldata artworkTokenURI, address payable[] calldata controlTokenArtists)
+        external onlyWhitelistedCreator(masterTokenId, controlTokenArtists.length) {
         // Can't mint a token with ID 0 anymore
-        require(artworkTokenId > 0);
+        require(masterTokenId > 0);
         // Mint the token that represents ownership of the entire artwork    
-        super._safeMint(msg.sender, artworkTokenId);
-        // reset the creator whitelist
-        creatorWhitelist[msg.sender] = 0;
+        super._safeMint(msg.sender, masterTokenId);
         // set the token URI for this art
-        super._setTokenURI(artworkTokenId, artworkTokenURI);
+        super._setTokenURI(masterTokenId, artworkTokenURI);
         // track the msg.sender address as the artist address for future royalties
-        uniqueTokenCreators[artworkTokenId].push(msg.sender);
+        uniqueTokenCreators[masterTokenId].push(msg.sender);
         // iterate through all control token URIs (1 for each control token)
         for (uint256 i = 0; i < controlTokenArtists.length; i++) {
             // can't provide burn address as artist
             require(controlTokenArtists[i] != address(0));
             // determine the tokenID for this control token
-            uint256 controlTokenId = artworkTokenId + i + 1;
+            uint256 controlTokenId = masterTokenId + i + 1;
             // add this control token artist to the unique creator list for that control token
             uniqueTokenCreators[controlTokenId].push(controlTokenArtists[i]);
             // stub in an existing control token so exists is true
             controlTokenMapping[controlTokenId] = ControlToken(0, 0, true, false);
 
             // Layer control tokens use the same royalty percentage as the master token
-            platformFirstSalePercentages[controlTokenId] = platformFirstSalePercentages[artworkTokenId];
+            platformFirstSalePercentages[controlTokenId] = platformFirstSalePercentages[masterTokenId];
 
-            platformSecondSalePercentages[controlTokenId] = platformSecondSalePercentages[artworkTokenId];
+            platformSecondSalePercentages[controlTokenId] = platformSecondSalePercentages[masterTokenId];
 
             if (controlTokenArtists[i] != msg.sender) {
                 bool containsControlTokenArtist = false;
 
-                for (uint256 k = 0; k < uniqueTokenCreators[artworkTokenId].length; k++) {
-                    if (uniqueTokenCreators[artworkTokenId][k] == controlTokenArtists[i]) {
+                for (uint256 k = 0; k < uniqueTokenCreators[masterTokenId].length; k++) {
+                    if (uniqueTokenCreators[masterTokenId][k] == controlTokenArtists[i]) {
                         containsControlTokenArtist = true;
                         break;
                     }
                 }
                 if (containsControlTokenArtist == false) {
-                    uniqueTokenCreators[artworkTokenId].push(controlTokenArtists[i]);
+                    uniqueTokenCreators[masterTokenId].push(controlTokenArtists[i]);
                 }
             }
         }
