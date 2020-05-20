@@ -27,6 +27,13 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         address permissioned
     );
 
+    // An event whenever a creator is whitelisted with the token id and the layer count
+    event CreatorWhitelisted(
+        uint256 tokenId,
+        uint256 layerCount,
+        address creator
+    );
+
     // An event whenever royalty amount for a token is updated
     event PlatformSalePercentageUpdated (
         uint256 tokenId,
@@ -208,6 +215,8 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         // define the platform percentages for this token here
         platformFirstSalePercentages[masterTokenId] = platformFirstSalePercentage;
         platformSecondSalePercentages[masterTokenId] = platformSecondSalePercentage;
+
+        emit CreatorWhitelisted(masterTokenId, layerCount, creator);
     }
 
     // Allows the current platform address to update to something different
