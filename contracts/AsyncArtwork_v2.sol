@@ -443,7 +443,8 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     }
 
     // Buy the artwork for the currently set price
-    function takeBuyPrice(uint256 tokenId) external payable {
+    // Allows the buyer to specify a minimum remaining uses they'll accept
+    function takeBuyPrice(uint256 tokenId, int256 expectedRemainingUpdates) external payable {
         // don't let owners/approved buy their own tokens
         require(_isApprovedOrOwner(msg.sender, tokenId) == false);
         // get the sale amount
@@ -452,6 +453,11 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         require(saleAmount > 0);
         // check that the buyer sent exact amount to purchase
         require(msg.value == saleAmount);
+        // if this is a control token
+        if (controlTokenMapping[tokenId].exists) {
+            // ensure that the remaining uses on the token is equal to what buyer expects
+            require(controlTokenMapping[tokenId].numRemainingUpdates == expectedRemainingUpdates);
+        }
         // Return all highest bidder's money
         if (pendingBids[tokenId].exists) {
             // Return bid amount back to bidder
