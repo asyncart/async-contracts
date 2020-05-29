@@ -443,7 +443,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     }
 
     // Buy the artwork for the currently set price
-    // Allows the buyer to specify a minimum remaining uses they'll accept
+    // Allows the buyer to specify an expected remaining uses they'll accept
     function takeBuyPrice(uint256 tokenId, int256 expectedRemainingUpdates) external payable {
         // don't let owners/approved buy their own tokens
         require(_isApprovedOrOwner(msg.sender, tokenId) == false);
@@ -596,13 +596,10 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
             require(newValues[i] != lever.currentValue, "Must provide different val");
 
             // grab previous value for the event emit
-            int256 previousValue = lever.currentValue;
+            previousValues[i] = lever.currentValue;
 
             // Update token current value
-            lever.currentValue = newValues[i];
-
-            // collect the previous lever values for the event emit below
-            previousValues[i] = previousValue;
+            lever.currentValue = newValues[i];    
         }
 
         // if there's a payment then send it to the platform (for higher priority updates)
