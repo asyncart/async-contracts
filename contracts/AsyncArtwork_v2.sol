@@ -152,7 +152,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     // map a control token ID to its highest bid
     mapping(uint256 => PendingBid) public pendingBids;
     // map a control token id to a control token struct
-    mapping(uint256 => ControlToken) controlTokenMapping;    
+    mapping(uint256 => ControlToken) public controlTokenMapping;    
     // mapping of addresses that are allowed to control tokens on your behalf
     mapping(address => mapping(uint256 => address)) public permissionedControllers;
     // the percentage of sale that an artist gets on secondary sales
