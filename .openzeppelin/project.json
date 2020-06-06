@@ -1,7 +1,7 @@
 {
   "manifestVersion": "2.2",
   "contracts": {
-    "AsyncArtwork_v0": "AsyncArtwork_v0"
+    "AsyncArtwork_v2": "AsyncArtwork_v2"
   },
   "dependencies": {},
   "name": "async-contracts",
@@ -16,10 +16,9 @@
     "typechain": {
       "enabled": false
     },
-    "manager": "openzeppelin",
+    "manager": "truffle",
     "artifactsDir": "build/contracts",
-    "contractsDir": "contracts",
-    "solcVersion": "0.5.17"
+    "contractsDir": "contracts"
   },
-  "telemetryOptIn": false
+  "telemetryOptIn": true
 }

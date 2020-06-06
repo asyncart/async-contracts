@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 /**
  * Use this file to configure your truffle project. It's seeded with some
@@ -72,7 +74,7 @@ module.exports = {
         return new HDWalletProvider(process.env.MNEMONIC, 'https://rinkeby.infura.io/v3/' + process.env.INFURA_API_KEY)
       },
       network_id: '4', // eslint-disable-line camelcase
-      gas: 4465030,
+      gas: 7465030,
       gasPrice: 10000000000,
     },
 
