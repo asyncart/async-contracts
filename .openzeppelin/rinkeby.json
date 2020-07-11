@@ -1,11 +1,11 @@
 {
   "contracts": {
     "AsyncArtwork_v2": {
-      "address": "0x8D194dc98Bf1826F0Da2C388490Da88f3517B20e",
-      "constructorCode": "60806040526153b2806100136000396000f3fe",
-      "bodyBytecodeHash": "33aa19811e5a7b050dd258facb42d3255756ebbf4b2437f946caee6c37e403e7",
-      "localBytecodeHash": "7ccc6931a5a3eb706fe691ef74f91ebf5befecc8f5d0283948462ee21ca9df3b",
-      "deployedBytecodeHash": "7ccc6931a5a3eb706fe691ef74f91ebf5befecc8f5d0283948462ee21ca9df3b",
+      "address": "0x75Ab9B477Daee9874B98402d6e1018AA97b887d2",
+      "constructorCode": "6080604052615406806100136000396000f3fe",
+      "bodyBytecodeHash": "cf5873322b395047c6f299f91326f70c7feb9c272a6dffa4ae8d6a3d55c97d8c",
+      "localBytecodeHash": "ac721d5f8049a3b74d878956c795569552fbec5ffa4b0a2bbe799ff5eb196738",
+      "deployedBytecodeHash": "ac721d5f8049a3b74d878956c795569552fbec5ffa4b0a2bbe799ff5eb196738",
       "types": {
         "t_bool": {
           "id": "t_bool",
@@ -48,9 +48,9 @@
           "members": [
             {
               "label": "_value",
-              "astId": 3426,
+              "astId": 37,
               "type": "t_uint256",
-              "src": "1024:14:8"
+              "src": "1024:14:1"
             }
           ]
         },
@@ -97,15 +97,15 @@
           "members": [
             {
               "label": "creator",
-              "astId": 134,
+              "astId": 793,
               "type": "t_address",
-              "src": "4067:15:0"
+              "src": "4067:15:11"
             },
             {
               "label": "layerCount",
-              "astId": 136,
+              "astId": 795,
               "type": "t_uint256",
-              "src": "4149:18:0"
+              "src": "4149:18:11"
             }
           ]
         },
@@ -140,21 +140,21 @@
           "members": [
             {
               "label": "bidder",
-              "astId": 127,
+              "astId": 786,
               "type": "t_address_payable",
-              "src": "3823:22:0"
+              "src": "3823:22:11"
             },
             {
               "label": "amount",
-              "astId": 129,
+              "astId": 788,
               "type": "t_uint256",
-              "src": "3891:14:0"
+              "src": "3891:14:11"
             },
             {
               "label": "exists",
-              "astId": 131,
+              "astId": 790,
               "type": "t_bool",
-              "src": "3967:11:0"
+              "src": "3967:11:11"
             }
           ]
         },
@@ -171,33 +171,33 @@
           "members": [
             {
               "label": "numControlLevers",
-              "astId": 105,
+              "astId": 764,
               "type": "t_uint256",
-              "src": "2905:24:0"
+              "src": "2905:24:11"
             },
             {
               "label": "numRemainingUpdates",
-              "astId": 107,
+              "astId": 766,
               "type": "t_int256",
-              "src": "3010:26:0"
+              "src": "3010:26:11"
             },
             {
               "label": "exists",
-              "astId": 109,
+              "astId": 768,
               "type": "t_bool",
-              "src": "3098:11:0"
+              "src": "3098:11:11"
             },
             {
               "label": "isSetup",
-              "astId": 111,
+              "astId": 770,
               "type": "t_bool",
-              "src": "3178:12:0"
+              "src": "3178:12:11"
             },
             {
               "label": "levers",
-              "astId": 115,
+              "astId": 774,
               "type": "t_mapping<t_struct<AsyncArtwork_v2.ControlLever>>",
-              "src": "3254:39:0"
+              "src": "3254:39:11"
             }
           ]
         },
@@ -213,27 +213,27 @@
           "members": [
             {
               "label": "minValue",
-              "astId": 118,
+              "astId": 777,
               "type": "t_int256",
-              "src": "3465:15:0"
+              "src": "3465:15:11"
             },
             {
               "label": "maxValue",
-              "astId": 120,
+              "astId": 779,
               "type": "t_int256",
-              "src": "3551:15:0"
+              "src": "3551:15:11"
             },
             {
               "label": "currentValue",
-              "astId": 122,
+              "astId": 781,
               "type": "t_int256",
-              "src": "3620:19:0"
+              "src": "3620:19:11"
             },
             {
               "label": "exists",
-              "astId": 124,
+              "astId": 783,
               "type": "t_bool",
-              "src": "3701:11:0"
+              "src": "3701:11:11"
             }
           ]
         },
@@ -255,281 +255,281 @@
           "contract": "Initializable",
           "path": "@openzeppelin/upgrades/contracts/Initializable.sol",
           "label": "initialized",
-          "astId": 3982,
+          "astId": 593,
           "type": "t_bool",
-          "src": "757:24:17"
+          "src": "757:24:10"
         },
         {
           "contract": "Initializable",
           "path": "@openzeppelin/upgrades/contracts/Initializable.sol",
           "label": "initializing",
-          "astId": 3984,
+          "astId": 595,
           "type": "t_bool",
-          "src": "876:25:17"
+          "src": "876:25:10"
         },
         {
           "contract": "Initializable",
           "path": "@openzeppelin/upgrades/contracts/Initializable.sol",
           "label": "______gap",
-          "astId": 4046,
+          "astId": 657,
           "type": "t_array:50<t_uint256>",
-          "src": "1982:29:17"
+          "src": "1982:29:10"
         },
         {
           "contract": "ERC165",
           "path": "@openzeppelin/contracts-ethereum-package/contracts/introspection/ERC165.sol",
           "label": "_supportedInterfaces",
-          "astId": 3482,
+          "astId": 93,
           "type": "t_mapping<t_bool>",
-          "src": "565:52:9"
+          "src": "565:52:2"
         },
         {
           "contract": "ERC165",
           "path": "@openzeppelin/contracts-ethereum-package/contracts/introspection/ERC165.sol",
           "label": "______gap",
-          "astId": 3527,
+          "astId": 138,
           "type": "t_array:50<t_uint256>",
-          "src": "1729:29:9"
+          "src": "1729:29:2"
         },
         {
           "contract": "ERC721",
           "path": "contracts/ERC721.sol",
           "label": "_tokenOwner",
-          "astId": 2020,
+          "astId": 2691,
           "type": "t_mapping<t_address>",
-          "src": "1235:48:1"
+          "src": "1235:48:12"
         },
         {
           "contract": "ERC721",
           "path": "contracts/ERC721.sol",
           "label": "_tokenApprovals",
-          "astId": 2024,
+          "astId": 2695,
           "type": "t_mapping<t_address>",
-          "src": "1339:52:1"
+          "src": "1339:52:12"
         },
         {
           "contract": "ERC721",
           "path": "contracts/ERC721.sol",
           "label": "_ownedTokensCount",
-          "astId": 2028,
+          "astId": 2699,
           "type": "t_mapping<t_struct<Counters.Counter>>",
-          "src": "1449:63:1"
+          "src": "1449:63:12"
         },
         {
           "contract": "ERC721",
           "path": "contracts/ERC721.sol",
           "label": "_operatorApprovals",
-          "astId": 2034,
+          "astId": 2705,
           "type": "t_mapping<t_bool>",
-          "src": "1567:73:1"
+          "src": "1567:73:12"
         },
         {
           "contract": "ERC721",
           "path": "contracts/ERC721.sol",
           "label": "______gap",
-          "astId": 2624,
+          "astId": 3295,
           "type": "t_array:50<t_uint256>",
-          "src": "15500:29:1"
+          "src": "15500:29:12"
         },
         {
           "contract": "ERC721Enumerable",
           "path": "contracts/ERC721Enumerable.sol",
           "label": "_ownedTokens",
-          "astId": 2647,
+          "astId": 3318,
           "type": "t_mapping<t_array:dyn<t_uint256>>",
-          "src": "654:50:2"
+          "src": "654:50:13"
         },
         {
           "contract": "ERC721Enumerable",
           "path": "contracts/ERC721Enumerable.sol",
           "label": "_ownedTokensIndex",
-          "astId": 2651,
+          "astId": 3322,
           "type": "t_mapping<t_uint256>",
-          "src": "774:53:2"
+          "src": "774:53:13"
         },
         {
           "contract": "ERC721Enumerable",
           "path": "contracts/ERC721Enumerable.sol",
           "label": "_allTokens",
-          "astId": 2654,
+          "astId": 3325,
           "type": "t_array:dyn<t_uint256>",
-          "src": "888:28:2"
+          "src": "888:28:13"
         },
         {
           "contract": "ERC721Enumerable",
           "path": "contracts/ERC721Enumerable.sol",
           "label": "_allTokensIndex",
-          "astId": 2658,
+          "astId": 3329,
           "type": "t_mapping<t_uint256>",
-          "src": "987:51:2"
+          "src": "987:51:13"
         },
         {
           "contract": "ERC721Enumerable",
           "path": "contracts/ERC721Enumerable.sol",
           "label": "______gap",
-          "astId": 2910,
+          "astId": 3581,
           "type": "t_array:50<t_uint256>",
-          "src": "9295:29:2"
+          "src": "9295:29:13"
         },
         {
           "contract": "ERC721Metadata",
           "path": "contracts/ERC721Metadata.sol",
           "label": "_name",
-          "astId": 2949,
+          "astId": 3620,
           "type": "t_string",
-          "src": "475:20:4"
+          "src": "475:20:15"
         },
         {
           "contract": "ERC721Metadata",
           "path": "contracts/ERC721Metadata.sol",
           "label": "_symbol",
-          "astId": 2951,
+          "astId": 3622,
           "type": "t_string",
-          "src": "522:22:4"
+          "src": "522:22:15"
         },
         {
           "contract": "ERC721Metadata",
           "path": "contracts/ERC721Metadata.sol",
           "label": "_tokenURIs",
-          "astId": 2955,
+          "astId": 3626,
           "type": "t_mapping<t_string>",
-          "src": "590:45:4"
+          "src": "590:45:15"
         },
         {
           "contract": "ERC721Metadata",
           "path": "contracts/ERC721Metadata.sol",
           "label": "______gap",
-          "astId": 3056,
+          "astId": 3727,
           "type": "t_array:50<t_uint256>",
-          "src": "3273:29:4"
+          "src": "3273:29:15"
         },
         {
           "contract": "AsyncArtwork_v2",
           "path": "contracts/AsyncArtwork_v2.sol",
           "label": "tokenDidHaveFirstSale",
-          "astId": 141,
+          "astId": 800,
           "type": "t_mapping<t_bool>",
-          "src": "4316:53:0"
+          "src": "4316:53:11"
         },
         {
           "contract": "AsyncArtwork_v2",
           "path": "contracts/AsyncArtwork_v2.sol",
           "label": "tokenURILocked",
-          "astId": 145,
+          "astId": 804,
           "type": "t_mapping<t_bool>",
-          "src": "4422:46:0"
+          "src": "4422:46:11"
         },
         {
           "contract": "AsyncArtwork_v2",
           "path": "contracts/AsyncArtwork_v2.sol",
           "label": "buyPrices",
-          "astId": 149,
+          "astId": 808,
           "type": "t_mapping<t_uint256>",
-          "src": "4523:44:0"
+          "src": "4523:44:11"
         },
         {
           "contract": "AsyncArtwork_v2",
           "path": "contracts/AsyncArtwork_v2.sol",
           "label": "failedTransferCredits",
-          "astId": 153,
+          "astId": 812,
           "type": "t_mapping<t_uint256>",
-          "src": "4637:56:0"
+          "src": "4637:56:11"
         },
         {
           "contract": "AsyncArtwork_v2",
           "path": "contracts/AsyncArtwork_v2.sol",
           "label": "platformFirstSalePercentages",
-          "astId": 157,
+          "astId": 816,
           "type": "t_mapping<t_uint256>",
-          "src": "4785:63:0"
+          "src": "4785:63:11"
         },
         {
           "contract": "AsyncArtwork_v2",
           "path": "contracts/AsyncArtwork_v2.sol",
           "label": "platformSecondSalePercentages",
-          "astId": 161,
+          "astId": 820,
           "type": "t_mapping<t_uint256>",
-          "src": "4944:64:0"
+          "src": "4944:64:11"
         },
         {
           "contract": "AsyncArtwork_v2",
           "path": "contracts/AsyncArtwork_v2.sol",
           "label": "creatorWhitelist",
-          "astId": 165,
+          "astId": 824,
           "type": "t_mapping<t_struct<AsyncArtwork_v2.WhitelistReservation>>",
-          "src": "5085:64:0"
+          "src": "5085:64:11"
         },
         {
           "contract": "AsyncArtwork_v2",
           "path": "contracts/AsyncArtwork_v2.sol",
           "label": "uniqueTokenCreators",
-          "astId": 170,
+          "astId": 829,
           "type": "t_mapping<t_array:dyn<t_address_payable>>",
-          "src": "5313:64:0"
+          "src": "5313:64:11"
         },
         {
           "contract": "AsyncArtwork_v2",
           "path": "contracts/AsyncArtwork_v2.sol",
           "label": "pendingBids",
-          "astId": 174,
+          "astId": 833,
           "type": "t_mapping<t_struct<AsyncArtwork_v2.PendingBid>>",
-          "src": "5436:49:0"
+          "src": "5436:49:11"
         },
         {
           "contract": "AsyncArtwork_v2",
           "path": "contracts/AsyncArtwork_v2.sol",
           "label": "controlTokenMapping",
-          "astId": 178,
+          "astId": 837,
           "type": "t_mapping<t_struct<AsyncArtwork_v2.ControlToken>>",
-          "src": "5547:59:0"
+          "src": "5547:59:11"
         },
         {
           "contract": "AsyncArtwork_v2",
           "path": "contracts/AsyncArtwork_v2.sol",
           "label": "permissionedControllers",
-          "astId": 184,
+          "astId": 843,
           "type": "t_mapping<t_address>",
-          "src": "5694:78:0"
+          "src": "5694:78:11"
         },
         {
           "contract": "AsyncArtwork_v2",
           "path": "contracts/AsyncArtwork_v2.sol",
           "label": "artistSecondSalePercentage",
-          "astId": 186,
+          "astId": 845,
           "type": "t_uint256",
-          "src": "5847:41:0"
+          "src": "5847:41:11"
         },
         {
           "contract": "AsyncArtwork_v2",
           "path": "contracts/AsyncArtwork_v2.sol",
           "label": "expectedTokenSupply",
-          "astId": 188,
+          "astId": 847,
           "type": "t_uint256",
-          "src": "5957:34:0"
+          "src": "5957:34:11"
         },
         {
           "contract": "AsyncArtwork_v2",
           "path": "contracts/AsyncArtwork_v2.sol",
           "label": "minBidIncreasePercent",
-          "astId": 190,
+          "astId": 849,
           "type": "t_uint256",
-          "src": "6047:36:0"
+          "src": "6047:36:11"
         },
         {
           "contract": "AsyncArtwork_v2",
           "path": "contracts/AsyncArtwork_v2.sol",
           "label": "platformAddress",
-          "astId": 192,
+          "astId": 851,
           "type": "t_address_payable",
-          "src": "6165:38:0"
+          "src": "6165:38:11"
         },
         {
           "contract": "AsyncArtwork_v2",
           "path": "contracts/AsyncArtwork_v2.sol",
           "label": "upgraderAddress",
-          "astId": 194,
+          "astId": 853,
           "type": "t_address",
-          "src": "6282:30:0"
+          "src": "6282:30:11"
         }
       ],
       "warnings": {
@@ -537,7 +537,42 @@
         "hasSelfDestruct": false,
         "hasDelegateCall": false,
         "hasInitialValuesInDeclarations": false,
-        "uninitializedBaseContracts": []
+        "uninitializedBaseContracts": [],
+        "storageUncheckedVars": [
+          {
+            "contract": "ERC721",
+            "path": "contracts/ERC721.sol",
+            "label": "_ownedTokensCount",
+            "astId": 2699,
+            "type": "t_mapping<t_struct<Counters.Counter>>",
+            "src": "1449:63:12"
+          },
+          {
+            "contract": "AsyncArtwork_v2",
+            "path": "contracts/AsyncArtwork_v2.sol",
+            "label": "creatorWhitelist",
+            "astId": 824,
+            "type": "t_mapping<t_struct<AsyncArtwork_v2.WhitelistReservation>>",
+            "src": "5085:64:11"
+          },
+          {
+            "contract": "AsyncArtwork_v2",
+            "path": "contracts/AsyncArtwork_v2.sol",
+            "label": "pendingBids",
+            "astId": 833,
+            "type": "t_mapping<t_struct<AsyncArtwork_v2.PendingBid>>",
+            "src": "5436:49:11"
+          },
+          {
+            "contract": "AsyncArtwork_v2",
+            "path": "contracts/AsyncArtwork_v2.sol",
+            "label": "controlTokenMapping",
+            "astId": 837,
+            "type": "t_mapping<t_struct<AsyncArtwork_v2.ControlToken>>",
+            "src": "5547:59:11"
+          }
+        ],
+        "storageDiff": []
       }
     }
   },
@@ -559,9 +594,14 @@
       {
         "address": "0x4F37310372dd39d451f7022EE587FA8B9F72d80B",
         "version": "1.0.0",
-        "implementation": "0x8D194dc98Bf1826F0Da2C388490Da88f3517B20e",
+        "implementation": "0x75Ab9B477Daee9874B98402d6e1018AA97b887d2",
         "admin": "0x1997D48AEE7790D759DCb63cDC71f48dFAd36ce0",
         "kind": "Upgradeable"
+      },
+      {
+        "address": "0x20d2CCD388111B19ca334d0Af04643058f85A450",
+        "kind": "NonProxy",
+        "bytecodeHash": "4927ef1527e4004e7952dca79d21bc23ac567ebdf9ef52197da6f094ec2dec6b"
       }
     ]
   },
