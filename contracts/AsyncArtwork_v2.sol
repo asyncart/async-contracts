@@ -201,13 +201,15 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         _;
     }
 
+    function setExpectedTokenSupply(uint256 newExpectedTokenSupply) external onlyPlatform {
+        expectedTokenSupply = newExpectedTokenSupply;
+    }
+
     // reserve a tokenID and layer count for a creator. Define a platform royalty percentage per art piece (some pieces have higher or lower amount)
     function whitelistTokenForCreator(address creator, uint256 masterTokenId, uint256 layerCount, 
         uint256 platformFirstSalePercentage, uint256 platformSecondSalePercentage) external onlyPlatform {
         // the tokenID we're reserving must be the current expected token supply
         require(masterTokenId == expectedTokenSupply);
-        // Async pieces must have at least 1 layer
-        require (layerCount > 0);
         // reserve the tokenID for this creator
         creatorWhitelist[masterTokenId] = WhitelistReservation(creator, layerCount);
         // increase the expected token supply
