@@ -229,7 +229,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     }
 
     // Allows platform to waive the first sale requirement for a token (for charity events, special cases, etc)
-    function waiveFirstSaleRequirement(uint256[] tokenIds) external onlyPlatform {
+    function waiveFirstSaleRequirement(uint256[] calldata tokenIds) external onlyPlatform {
         // This allows the token sale proceeds to go to the current owner (rather than be distributed amongst the token's creators)
         for (uint256 k = 0; k < tokenIds.length; k++) {
             tokenDidHaveFirstSale[tokenIds[k]] = true;
