@@ -1,0 +1,561 @@
+{
+  "contracts": {
+    "AsyncArtwork_v2": {
+      "address": "0x1C37ce7fA45F433aE6D0F3534578de8148aaC175",
+      "constructorCode": "608060405261547b806100136000396000f3fe",
+      "bodyBytecodeHash": "c2d69a07105635a1e2b579e84cc70fbfae8953e51a33fc4ed1ea87a4126e3440",
+      "localBytecodeHash": "65adf3c579c038ad07eb966e298e638c7e1a3a4e5913401c1d1907b85781c96e",
+      "deployedBytecodeHash": "65adf3c579c038ad07eb966e298e638c7e1a3a4e5913401c1d1907b85781c96e",
+      "types": {
+        "t_bool": {
+          "id": "t_bool",
+          "kind": "elementary",
+          "label": "bool"
+        },
+        "t_uint256": {
+          "id": "t_uint256",
+          "kind": "elementary",
+          "label": "uint256"
+        },
+        "t_array:50<t_uint256>": {
+          "id": "t_array:50<t_uint256>",
+          "valueType": "t_uint256",
+          "length": "50",
+          "kind": "array",
+          "label": "uint256[50]"
+        },
+        "t_mapping<t_bool>": {
+          "id": "t_mapping<t_bool>",
+          "valueType": "t_bool",
+          "label": "mapping(key => bool)",
+          "kind": "mapping"
+        },
+        "t_address": {
+          "id": "t_address",
+          "kind": "elementary",
+          "label": "address"
+        },
+        "t_mapping<t_address>": {
+          "id": "t_mapping<t_address>",
+          "valueType": "t_address",
+          "label": "mapping(key => address)",
+          "kind": "mapping"
+        },
+        "t_struct<Counters.Counter>": {
+          "id": "t_struct<Counters.Counter>",
+          "kind": "struct",
+          "label": "Counters.Counter",
+          "members": [
+            {
+              "label": "_value",
+              "astId": 3448,
+              "type": "t_uint256",
+              "src": "1024:14:8"
+            }
+          ]
+        },
+        "t_mapping<t_struct<Counters.Counter>>": {
+          "id": "t_mapping<t_struct<Counters.Counter>>",
+          "valueType": "t_struct<Counters.Counter>",
+          "label": "mapping(key => Counters.Counter)",
+          "kind": "mapping"
+        },
+        "t_array:dyn<t_uint256>": {
+          "id": "t_array:dyn<t_uint256>",
+          "valueType": "t_uint256",
+          "length": "dyn",
+          "kind": "array",
+          "label": "uint256[]"
+        },
+        "t_mapping<t_array:dyn<t_uint256>>": {
+          "id": "t_mapping<t_array:dyn<t_uint256>>",
+          "valueType": "t_array:dyn<t_uint256>",
+          "label": "mapping(key => uint256[])",
+          "kind": "mapping"
+        },
+        "t_mapping<t_uint256>": {
+          "id": "t_mapping<t_uint256>",
+          "valueType": "t_uint256",
+          "label": "mapping(key => uint256)",
+          "kind": "mapping"
+        },
+        "t_string": {
+          "id": "t_string",
+          "kind": "elementary",
+          "label": "string"
+        },
+        "t_mapping<t_string>": {
+          "id": "t_mapping<t_string>",
+          "valueType": "t_string",
+          "label": "mapping(key => string)",
+          "kind": "mapping"
+        },
+        "t_struct<AsyncArtwork_v2.WhitelistReservation>": {
+          "id": "t_struct<AsyncArtwork_v2.WhitelistReservation>",
+          "kind": "struct",
+          "label": "AsyncArtwork_v2.WhitelistReservation",
+          "members": [
+            {
+              "label": "creator",
+              "astId": 134,
+              "type": "t_address",
+              "src": "4067:15:0"
+            },
+            {
+              "label": "layerCount",
+              "astId": 136,
+              "type": "t_uint256",
+              "src": "4149:18:0"
+            }
+          ]
+        },
+        "t_mapping<t_struct<AsyncArtwork_v2.WhitelistReservation>>": {
+          "id": "t_mapping<t_struct<AsyncArtwork_v2.WhitelistReservation>>",
+          "valueType": "t_struct<AsyncArtwork_v2.WhitelistReservation>",
+          "label": "mapping(key => AsyncArtwork_v2.WhitelistReservation)",
+          "kind": "mapping"
+        },
+        "t_address_payable": {
+          "id": "t_address_payable",
+          "kind": "elementary",
+          "label": "address payable"
+        },
+        "t_array:dyn<t_address_payable>": {
+          "id": "t_array:dyn<t_address_payable>",
+          "valueType": "t_address_payable",
+          "length": "dyn",
+          "kind": "array",
+          "label": "address payable[]"
+        },
+        "t_mapping<t_array:dyn<t_address_payable>>": {
+          "id": "t_mapping<t_array:dyn<t_address_payable>>",
+          "valueType": "t_array:dyn<t_address_payable>",
+          "label": "mapping(key => address payable[])",
+          "kind": "mapping"
+        },
+        "t_struct<AsyncArtwork_v2.PendingBid>": {
+          "id": "t_struct<AsyncArtwork_v2.PendingBid>",
+          "kind": "struct",
+          "label": "AsyncArtwork_v2.PendingBid",
+          "members": [
+            {
+              "label": "bidder",
+              "astId": 127,
+              "type": "t_address_payable",
+              "src": "3823:22:0"
+            },
+            {
+              "label": "amount",
+              "astId": 129,
+              "type": "t_uint256",
+              "src": "3891:14:0"
+            },
+            {
+              "label": "exists",
+              "astId": 131,
+              "type": "t_bool",
+              "src": "3967:11:0"
+            }
+          ]
+        },
+        "t_mapping<t_struct<AsyncArtwork_v2.PendingBid>>": {
+          "id": "t_mapping<t_struct<AsyncArtwork_v2.PendingBid>>",
+          "valueType": "t_struct<AsyncArtwork_v2.PendingBid>",
+          "label": "mapping(key => AsyncArtwork_v2.PendingBid)",
+          "kind": "mapping"
+        },
+        "t_struct<AsyncArtwork_v2.ControlToken>": {
+          "id": "t_struct<AsyncArtwork_v2.ControlToken>",
+          "kind": "struct",
+          "label": "AsyncArtwork_v2.ControlToken",
+          "members": [
+            {
+              "label": "numControlLevers",
+              "astId": 105,
+              "type": "t_uint256",
+              "src": "2905:24:0"
+            },
+            {
+              "label": "numRemainingUpdates",
+              "astId": 107,
+              "type": "t_int256",
+              "src": "3010:26:0"
+            },
+            {
+              "label": "exists",
+              "astId": 109,
+              "type": "t_bool",
+              "src": "3098:11:0"
+            },
+            {
+              "label": "isSetup",
+              "astId": 111,
+              "type": "t_bool",
+              "src": "3178:12:0"
+            },
+            {
+              "label": "levers",
+              "astId": 115,
+              "type": "t_mapping<t_struct<AsyncArtwork_v2.ControlLever>>",
+              "src": "3254:39:0"
+            }
+          ]
+        },
+        "t_int256": {
+          "id": "t_int256",
+          "kind": "elementary",
+          "label": "int256"
+        },
+        "t_struct<AsyncArtwork_v2.ControlLever>": {
+          "id": "t_struct<AsyncArtwork_v2.ControlLever>",
+          "kind": "struct",
+          "label": "AsyncArtwork_v2.ControlLever",
+          "members": [
+            {
+              "label": "minValue",
+              "astId": 118,
+              "type": "t_int256",
+              "src": "3465:15:0"
+            },
+            {
+              "label": "maxValue",
+              "astId": 120,
+              "type": "t_int256",
+              "src": "3551:15:0"
+            },
+            {
+              "label": "currentValue",
+              "astId": 122,
+              "type": "t_int256",
+              "src": "3620:19:0"
+            },
+            {
+              "label": "exists",
+              "astId": 124,
+              "type": "t_bool",
+              "src": "3701:11:0"
+            }
+          ]
+        },
+        "t_mapping<t_struct<AsyncArtwork_v2.ControlLever>>": {
+          "id": "t_mapping<t_struct<AsyncArtwork_v2.ControlLever>>",
+          "valueType": "t_struct<AsyncArtwork_v2.ControlLever>",
+          "label": "mapping(key => AsyncArtwork_v2.ControlLever)",
+          "kind": "mapping"
+        },
+        "t_mapping<t_struct<AsyncArtwork_v2.ControlToken>>": {
+          "id": "t_mapping<t_struct<AsyncArtwork_v2.ControlToken>>",
+          "valueType": "t_struct<AsyncArtwork_v2.ControlToken>",
+          "label": "mapping(key => AsyncArtwork_v2.ControlToken)",
+          "kind": "mapping"
+        }
+      },
+      "storage": [
+        {
+          "contract": "Initializable",
+          "path": "@openzeppelin/upgrades/contracts/Initializable.sol",
+          "label": "initialized",
+          "astId": 4004,
+          "type": "t_bool",
+          "src": "757:24:17"
+        },
+        {
+          "contract": "Initializable",
+          "path": "@openzeppelin/upgrades/contracts/Initializable.sol",
+          "label": "initializing",
+          "astId": 4006,
+          "type": "t_bool",
+          "src": "876:25:17"
+        },
+        {
+          "contract": "Initializable",
+          "path": "@openzeppelin/upgrades/contracts/Initializable.sol",
+          "label": "______gap",
+          "astId": 4068,
+          "type": "t_array:50<t_uint256>",
+          "src": "1982:29:17"
+        },
+        {
+          "contract": "ERC165",
+          "path": "@openzeppelin/contracts-ethereum-package/contracts/introspection/ERC165.sol",
+          "label": "_supportedInterfaces",
+          "astId": 3504,
+          "type": "t_mapping<t_bool>",
+          "src": "565:52:9"
+        },
+        {
+          "contract": "ERC165",
+          "path": "@openzeppelin/contracts-ethereum-package/contracts/introspection/ERC165.sol",
+          "label": "______gap",
+          "astId": 3549,
+          "type": "t_array:50<t_uint256>",
+          "src": "1729:29:9"
+        },
+        {
+          "contract": "ERC721",
+          "path": "contracts/ERC721.sol",
+          "label": "_tokenOwner",
+          "astId": 2042,
+          "type": "t_mapping<t_address>",
+          "src": "1235:48:1"
+        },
+        {
+          "contract": "ERC721",
+          "path": "contracts/ERC721.sol",
+          "label": "_tokenApprovals",
+          "astId": 2046,
+          "type": "t_mapping<t_address>",
+          "src": "1339:52:1"
+        },
+        {
+          "contract": "ERC721",
+          "path": "contracts/ERC721.sol",
+          "label": "_ownedTokensCount",
+          "astId": 2050,
+          "type": "t_mapping<t_struct<Counters.Counter>>",
+          "src": "1449:63:1"
+        },
+        {
+          "contract": "ERC721",
+          "path": "contracts/ERC721.sol",
+          "label": "_operatorApprovals",
+          "astId": 2056,
+          "type": "t_mapping<t_bool>",
+          "src": "1567:73:1"
+        },
+        {
+          "contract": "ERC721",
+          "path": "contracts/ERC721.sol",
+          "label": "______gap",
+          "astId": 2646,
+          "type": "t_array:50<t_uint256>",
+          "src": "15500:29:1"
+        },
+        {
+          "contract": "ERC721Enumerable",
+          "path": "contracts/ERC721Enumerable.sol",
+          "label": "_ownedTokens",
+          "astId": 2669,
+          "type": "t_mapping<t_array:dyn<t_uint256>>",
+          "src": "654:50:2"
+        },
+        {
+          "contract": "ERC721Enumerable",
+          "path": "contracts/ERC721Enumerable.sol",
+          "label": "_ownedTokensIndex",
+          "astId": 2673,
+          "type": "t_mapping<t_uint256>",
+          "src": "774:53:2"
+        },
+        {
+          "contract": "ERC721Enumerable",
+          "path": "contracts/ERC721Enumerable.sol",
+          "label": "_allTokens",
+          "astId": 2676,
+          "type": "t_array:dyn<t_uint256>",
+          "src": "888:28:2"
+        },
+        {
+          "contract": "ERC721Enumerable",
+          "path": "contracts/ERC721Enumerable.sol",
+          "label": "_allTokensIndex",
+          "astId": 2680,
+          "type": "t_mapping<t_uint256>",
+          "src": "987:51:2"
+        },
+        {
+          "contract": "ERC721Enumerable",
+          "path": "contracts/ERC721Enumerable.sol",
+          "label": "______gap",
+          "astId": 2932,
+          "type": "t_array:50<t_uint256>",
+          "src": "9295:29:2"
+        },
+        {
+          "contract": "ERC721Metadata",
+          "path": "contracts/ERC721Metadata.sol",
+          "label": "_name",
+          "astId": 2971,
+          "type": "t_string",
+          "src": "475:20:4"
+        },
+        {
+          "contract": "ERC721Metadata",
+          "path": "contracts/ERC721Metadata.sol",
+          "label": "_symbol",
+          "astId": 2973,
+          "type": "t_string",
+          "src": "522:22:4"
+        },
+        {
+          "contract": "ERC721Metadata",
+          "path": "contracts/ERC721Metadata.sol",
+          "label": "_tokenURIs",
+          "astId": 2977,
+          "type": "t_mapping<t_string>",
+          "src": "590:45:4"
+        },
+        {
+          "contract": "ERC721Metadata",
+          "path": "contracts/ERC721Metadata.sol",
+          "label": "______gap",
+          "astId": 3078,
+          "type": "t_array:50<t_uint256>",
+          "src": "3273:29:4"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "tokenDidHaveFirstSale",
+          "astId": 141,
+          "type": "t_mapping<t_bool>",
+          "src": "4316:53:0"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "tokenURILocked",
+          "astId": 145,
+          "type": "t_mapping<t_bool>",
+          "src": "4422:46:0"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "buyPrices",
+          "astId": 149,
+          "type": "t_mapping<t_uint256>",
+          "src": "4523:44:0"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "failedTransferCredits",
+          "astId": 153,
+          "type": "t_mapping<t_uint256>",
+          "src": "4637:56:0"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "platformFirstSalePercentages",
+          "astId": 157,
+          "type": "t_mapping<t_uint256>",
+          "src": "4785:63:0"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "platformSecondSalePercentages",
+          "astId": 161,
+          "type": "t_mapping<t_uint256>",
+          "src": "4944:64:0"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "creatorWhitelist",
+          "astId": 165,
+          "type": "t_mapping<t_struct<AsyncArtwork_v2.WhitelistReservation>>",
+          "src": "5085:64:0"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "uniqueTokenCreators",
+          "astId": 170,
+          "type": "t_mapping<t_array:dyn<t_address_payable>>",
+          "src": "5313:64:0"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "pendingBids",
+          "astId": 174,
+          "type": "t_mapping<t_struct<AsyncArtwork_v2.PendingBid>>",
+          "src": "5436:49:0"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "controlTokenMapping",
+          "astId": 178,
+          "type": "t_mapping<t_struct<AsyncArtwork_v2.ControlToken>>",
+          "src": "5547:59:0"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "permissionedControllers",
+          "astId": 184,
+          "type": "t_mapping<t_address>",
+          "src": "5694:78:0"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "artistSecondSalePercentage",
+          "astId": 186,
+          "type": "t_uint256",
+          "src": "5847:41:0"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "expectedTokenSupply",
+          "astId": 188,
+          "type": "t_uint256",
+          "src": "5957:34:0"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "minBidIncreasePercent",
+          "astId": 190,
+          "type": "t_uint256",
+          "src": "6047:36:0"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "platformAddress",
+          "astId": 192,
+          "type": "t_address_payable",
+          "src": "6165:38:0"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "upgraderAddress",
+          "astId": 194,
+          "type": "t_address",
+          "src": "6282:30:0"
+        }
+      ],
+      "warnings": {
+        "hasConstructor": false,
+        "hasSelfDestruct": false,
+        "hasDelegateCall": false,
+        "hasInitialValuesInDeclarations": false,
+        "uninitializedBaseContracts": []
+      }
+    }
+  },
+  "solidityLibs": {},
+  "proxies": {
+    "async-contracts/AsyncArtwork_v2": [
+      {
+        "address": "0x7B55f905219676140d0ad19184A9BDB9C6E4Fe79",
+        "version": "1.0.0",
+        "implementation": "0x1C37ce7fA45F433aE6D0F3534578de8148aaC175",
+        "admin": "0x385194E63dc33D7a502C18D5806a83309cB2A0D9",
+        "kind": "Upgradeable"
+      }
+    ]
+  },
+  "manifestVersion": "2.2",
+  "version": "1.0.0",
+  "proxyAdmin": {
+    "address": "0x385194E63dc33D7a502C18D5806a83309cB2A0D9"
+  }
+}
