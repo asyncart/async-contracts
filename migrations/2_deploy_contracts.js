@@ -1,6 +1,11 @@
+require("dotenv").config();
+
 const Migrations = artifacts.require("./Migrations.sol");
 const AsyncArtwork_v2 = artifacts.require("./AsyncArtwork_v2.sol");
 const TokenUpgrader = artifacts.require("./TokenUpgrader.sol");
+
+// Helper scenarios
+const { allContractFunctions } = require("../scenarios/1_full_system");
 
 module.exports = function(deployer, networkName, accounts) {
   deployer.then(async () => {
@@ -18,12 +23,9 @@ module.exports = function(deployer, networkName, accounts) {
     await asyncContract.initialize(title, symbol, 1, accounts[0]);
 
     if (networkName == "graphTesting") {
-      // function whitelistTokenForCreator(address creator, uint256 masterTokenId, uint256 layerCount,
-      //   uint256 platformFirstSalePercentage, uint256 platformSecondSalePercentage) external onlyPlatform {
-      await asyncContract.whitelistTokenForCreator(accounts[1], 1, 5, 10, 10, {
-        from: accounts[0],
-      });
-      console.log("User whitelisted");
+      if (process.env.MIGRATIONS == "full-system-test") {
+        await allContractFunctions(asyncContract, accounts);
+      }
     }
   });
 };
