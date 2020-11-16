@@ -141,6 +141,15 @@ const allContractFunctions = async (asyncContract, accounts) => {
     }
   );
 
+  //////////////////////////////////
+  //// more grantControlPermission //////
+  //////////////////////////////////
+  console.log("Granting more control permissions");
+
+  await asyncContract.grantControlPermission(masterToken1, user8, {
+    from: user6,
+  });
+
   /////////////////////////////
   ////////// Bids /////////////
   /////////////////////////////
