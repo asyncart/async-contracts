@@ -165,6 +165,8 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
     address payable public platformAddress;
     // the address of the contract that can upgrade from v1 to v2 tokens
     address public upgraderAddress;
+    // the address of the contract that can whitelist artists to mint
+    address public minterAddress;
 
     function initialize(string memory name, string memory symbol, uint256 initialExpectedTokenSupply, address _upgraderAddress) public initializer {
         ERC721.initialize();
@@ -195,6 +197,12 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         _;
     }
 
+    // modifier for only allowing the minter to make a call
+    modifier onlyMinter() {
+        require(msg.sender == minterAddress);
+        _;
+    }
+
     modifier onlyWhitelistedCreator(uint256 masterTokenId, uint256 layerCount) {
         require(creatorWhitelist[masterTokenId].creator == msg.sender);
         require(creatorWhitelist[masterTokenId].layerCount == layerCount);
@@ -207,7 +215,7 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
 
     // reserve a tokenID and layer count for a creator. Define a platform royalty percentage per art piece (some pieces have higher or lower amount)
     function whitelistTokenForCreator(address creator, uint256 masterTokenId, uint256 layerCount, 
-        uint256 platformFirstSalePercentage, uint256 platformSecondSalePercentage) external onlyPlatform {
+        uint256 platformFirstSalePercentage, uint256 platformSecondSalePercentage) external onlyMinter {
         // the tokenID we're reserving must be the current expected token supply
         require(masterTokenId == expectedTokenSupply);
         // reserve the tokenID for this creator
@@ -219,6 +227,11 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         platformSecondSalePercentages[masterTokenId] = platformSecondSalePercentage;
 
         emit CreatorWhitelisted(masterTokenId, layerCount, creator);
+    }
+
+    // Allows the platform to change the minter address
+    function updateMinterAddress(address newMinterAddress) external onlyPlatform {
+        minterAddress = newMinterAddress;
     }
 
     // Allows the current platform address to update to something different
@@ -473,10 +486,12 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
 
     // Take an amount and distribute it evenly amongst a list of creator addresses
     function distributeFundsToCreators(uint256 amount, address payable[] memory creators) private {
-        uint256 creatorShare = amount.div(creators.length);
+        if (creators.length > 0) {
+            uint256 creatorShare = amount.div(creators.length);
 
-        for (uint256 i = 0; i < creators.length; i++) {
-            safeFundsTransfer(creators[i], creatorShare);
+            for (uint256 i = 0; i < creators.length; i++) {
+                safeFundsTransfer(creators[i], creatorShare);
+            }
         }
     }
 
