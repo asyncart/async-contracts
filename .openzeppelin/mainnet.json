@@ -1,11 +1,11 @@
 {
   "contracts": {
     "AsyncArtwork_v2": {
-      "address": "0xc25782A3dfC6130AD5Ec5c297541e1F3e8aa0225",
-      "constructorCode": "608060405261547c806100136000396000f3fe",
-      "bodyBytecodeHash": "f3b98adcd644d38a8a35ccb40724115306aefdbbb1d05c7b64840980794766d8",
-      "localBytecodeHash": "1347354c2a89ab6aee27c99a8c320b1a6a0a3955d64cd3a415bba05aa3498ed0",
-      "deployedBytecodeHash": "1347354c2a89ab6aee27c99a8c320b1a6a0a3955d64cd3a415bba05aa3498ed0",
+      "address": "0x291C80D4Aa0B6ED9E6b59c82121b359999efd4b7",
+      "constructorCode": "608060405261552c806100136000396000f3fe",
+      "bodyBytecodeHash": "f5527b8dcfbd4339522f5a3dad901ececd49517cf8a7b03dd4c26b3d47af97db",
+      "localBytecodeHash": "0b292205faa3c6f7a8407ab190c6c776cffee8e503a58e8070a62b553d0d6756",
+      "deployedBytecodeHash": "0b292205faa3c6f7a8407ab190c6c776cffee8e503a58e8070a62b553d0d6756",
       "types": {
         "t_bool": {
           "id": "t_bool",
@@ -295,7 +295,7 @@
           "contract": "ERC721",
           "path": "contracts/ERC721.sol",
           "label": "_tokenOwner",
-          "astId": 2701,
+          "astId": 2732,
           "type": "t_mapping<t_address>",
           "src": "1235:48:12"
         },
@@ -303,7 +303,7 @@
           "contract": "ERC721",
           "path": "contracts/ERC721.sol",
           "label": "_tokenApprovals",
-          "astId": 2705,
+          "astId": 2736,
           "type": "t_mapping<t_address>",
           "src": "1339:52:12"
         },
@@ -311,7 +311,7 @@
           "contract": "ERC721",
           "path": "contracts/ERC721.sol",
           "label": "_ownedTokensCount",
-          "astId": 2709,
+          "astId": 2740,
           "type": "t_mapping<t_struct<Counters.Counter>>",
           "src": "1449:63:12"
         },
@@ -319,7 +319,7 @@
           "contract": "ERC721",
           "path": "contracts/ERC721.sol",
           "label": "_operatorApprovals",
-          "astId": 2715,
+          "astId": 2746,
           "type": "t_mapping<t_bool>",
           "src": "1567:73:12"
         },
@@ -327,7 +327,7 @@
           "contract": "ERC721",
           "path": "contracts/ERC721.sol",
           "label": "______gap",
-          "astId": 3305,
+          "astId": 3336,
           "type": "t_array:50<t_uint256>",
           "src": "15500:29:12"
         },
@@ -335,7 +335,7 @@
           "contract": "ERC721Enumerable",
           "path": "contracts/ERC721Enumerable.sol",
           "label": "_ownedTokens",
-          "astId": 3328,
+          "astId": 3359,
           "type": "t_mapping<t_array:dyn<t_uint256>>",
           "src": "654:50:13"
         },
@@ -343,7 +343,7 @@
           "contract": "ERC721Enumerable",
           "path": "contracts/ERC721Enumerable.sol",
           "label": "_ownedTokensIndex",
-          "astId": 3332,
+          "astId": 3363,
           "type": "t_mapping<t_uint256>",
           "src": "774:53:13"
         },
@@ -351,7 +351,7 @@
           "contract": "ERC721Enumerable",
           "path": "contracts/ERC721Enumerable.sol",
           "label": "_allTokens",
-          "astId": 3335,
+          "astId": 3366,
           "type": "t_array:dyn<t_uint256>",
           "src": "888:28:13"
         },
@@ -359,7 +359,7 @@
           "contract": "ERC721Enumerable",
           "path": "contracts/ERC721Enumerable.sol",
           "label": "_allTokensIndex",
-          "astId": 3339,
+          "astId": 3370,
           "type": "t_mapping<t_uint256>",
           "src": "987:51:13"
         },
@@ -367,7 +367,7 @@
           "contract": "ERC721Enumerable",
           "path": "contracts/ERC721Enumerable.sol",
           "label": "______gap",
-          "astId": 3591,
+          "astId": 3622,
           "type": "t_array:50<t_uint256>",
           "src": "9295:29:13"
         },
@@ -375,7 +375,7 @@
           "contract": "ERC721Metadata",
           "path": "contracts/ERC721Metadata.sol",
           "label": "_name",
-          "astId": 3630,
+          "astId": 3661,
           "type": "t_string",
           "src": "475:20:15"
         },
@@ -383,7 +383,7 @@
           "contract": "ERC721Metadata",
           "path": "contracts/ERC721Metadata.sol",
           "label": "_symbol",
-          "astId": 3632,
+          "astId": 3663,
           "type": "t_string",
           "src": "522:22:15"
         },
@@ -391,7 +391,7 @@
           "contract": "ERC721Metadata",
           "path": "contracts/ERC721Metadata.sol",
           "label": "_tokenURIs",
-          "astId": 3636,
+          "astId": 3667,
           "type": "t_mapping<t_string>",
           "src": "590:45:15"
         },
@@ -399,7 +399,7 @@
           "contract": "ERC721Metadata",
           "path": "contracts/ERC721Metadata.sol",
           "label": "______gap",
-          "astId": 3737,
+          "astId": 3768,
           "type": "t_array:50<t_uint256>",
           "src": "3273:29:15"
         },
@@ -530,6 +530,14 @@
           "astId": 853,
           "type": "t_address",
           "src": "6282:30:11"
+        },
+        {
+          "contract": "AsyncArtwork_v2",
+          "path": "contracts/AsyncArtwork_v2.sol",
+          "label": "minterAddress",
+          "astId": 855,
+          "type": "t_address",
+          "src": "6388:28:11"
         }
       ],
       "warnings": {
@@ -537,7 +545,55 @@
         "hasSelfDestruct": false,
         "hasDelegateCall": false,
         "hasInitialValuesInDeclarations": false,
-        "uninitializedBaseContracts": []
+        "uninitializedBaseContracts": [],
+        "storageUncheckedVars": [
+          {
+            "contract": "ERC721",
+            "path": "contracts/ERC721.sol",
+            "label": "_ownedTokensCount",
+            "astId": 2740,
+            "type": "t_mapping<t_struct<Counters.Counter>>",
+            "src": "1449:63:12"
+          },
+          {
+            "contract": "AsyncArtwork_v2",
+            "path": "contracts/AsyncArtwork_v2.sol",
+            "label": "creatorWhitelist",
+            "astId": 824,
+            "type": "t_mapping<t_struct<AsyncArtwork_v2.WhitelistReservation>>",
+            "src": "5085:64:11"
+          },
+          {
+            "contract": "AsyncArtwork_v2",
+            "path": "contracts/AsyncArtwork_v2.sol",
+            "label": "pendingBids",
+            "astId": 833,
+            "type": "t_mapping<t_struct<AsyncArtwork_v2.PendingBid>>",
+            "src": "5436:49:11"
+          },
+          {
+            "contract": "AsyncArtwork_v2",
+            "path": "contracts/AsyncArtwork_v2.sol",
+            "label": "controlTokenMapping",
+            "astId": 837,
+            "type": "t_mapping<t_struct<AsyncArtwork_v2.ControlToken>>",
+            "src": "5547:59:11"
+          }
+        ],
+        "storageDiff": [
+          {
+            "action": "append",
+            "updated": {
+              "index": 35,
+              "contract": "AsyncArtwork_v2",
+              "path": "contracts/AsyncArtwork_v2.sol",
+              "label": "minterAddress",
+              "astId": 855,
+              "type": "t_address",
+              "src": "6388:28:11"
+            }
+          }
+        ]
       }
     }
   },
@@ -554,7 +610,7 @@
       {
         "address": "0xb6dAe651468E9593E4581705a09c10A76AC1e0c8",
         "version": "1.0.0",
-        "implementation": "0xc25782A3dfC6130AD5Ec5c297541e1F3e8aa0225",
+        "implementation": "0x291C80D4Aa0B6ED9E6b59c82121b359999efd4b7",
         "admin": "0x9369a3E299C306e88c1C2AB56dD865d55b35b7d0",
         "kind": "Upgradeable"
       }
