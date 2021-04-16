@@ -74,6 +74,12 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         address buyer
     );
 
+    // An event when a token(s) first sale requirement has been waived
+    event FirstSaleWaived(
+        // the ids of the token
+        uint256[] tokenIds
+    );
+
     // An event whenever a control token has been updated
     event ControlLeverUpdated(
         // the id of the token
@@ -246,7 +252,9 @@ contract AsyncArtwork_v2 is Initializable, ERC721, ERC721Enumerable, ERC721Metad
         // This allows the token sale proceeds to go to the current owner (rather than be distributed amongst the token's creators)
         for (uint256 k = 0; k < tokenIds.length; k++) {
             tokenDidHaveFirstSale[tokenIds[k]] = true;
-        }        
+        }
+
+        emit FirstSaleWaived(tokenIds);
     }
     // Allows platform to change the royalty percentage for a specific token
     function updatePlatformSalePercentage(uint256 tokenId, uint256 platformFirstSalePercentage, 
