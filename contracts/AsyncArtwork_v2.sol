@@ -176,7 +176,6 @@ contract AsyncArtwork_v2 is
     address public minterAddress;
 
     // v3 vairables
-    // mapping(uint256 => mapping(address => bool)) public alreadyAdded;
     uint256 public defaultPlatformFirstSalePercentage;
     uint256 public defaultPlatformSecondSalePercentage;
 
@@ -384,11 +383,6 @@ contract AsyncArtwork_v2 is
             additionalCollaborators.length <= 50,
             "Too many collaborators."
         );
-        // check that a control token exists for this token id
-        // require(
-        //     controlTokenMapping[controlTokenId].exists,
-        //     "No control token found"
-        // );
         // ensure that this token is not setup yet
         require(
             controlTokenMapping[controlTokenId].isSetup == false,
@@ -519,127 +513,6 @@ contract AsyncArtwork_v2 is
     }
 
     function mintArtwork(
-        uint256 masterTokenId,
-        string calldata artworkTokenURI,
-        address payable[] calldata controlTokenArtists
-    )
-        external
-        onlyWhitelistedCreator(masterTokenId, controlTokenArtists.length)
-    {
-        // Can't mint a token with ID 0 anymore
-        require(masterTokenId > 0);
-        // Mint the token that represents ownership of the entire artwork
-        super._safeMint(msg.sender, masterTokenId);
-        // set the token URI for this art
-        super._setTokenURI(masterTokenId, artworkTokenURI);
-        // track the msg.sender address as the artist address for future royalties
-        uniqueTokenCreators[masterTokenId].push(msg.sender);
-        // iterate through all control token URIs (1 for each control token)
-        for (uint256 i = 0; i < controlTokenArtists.length; i++) {
-            // can't provide burn address as artist
-            require(controlTokenArtists[i] != address(0));
-            // determine the tokenID for this control token
-            uint256 controlTokenId = masterTokenId + i + 1;
-            // add this control token artist to the unique creator list for that control token
-            uniqueTokenCreators[controlTokenId].push(controlTokenArtists[i]);
-            // stub in an existing control token so exists is true
-            controlTokenMapping[controlTokenId] = ControlToken(
-                0,
-                0,
-                true,
-                false
-            );
-
-            // Layer control tokens use the same royalty percentage as the master token
-            platformFirstSalePercentages[
-                controlTokenId
-            ] = platformFirstSalePercentages[masterTokenId];
-
-            platformSecondSalePercentages[
-                controlTokenId
-            ] = platformSecondSalePercentages[masterTokenId];
-
-            if (controlTokenArtists[i] != msg.sender) {
-                bool containsControlTokenArtist = false;
-
-                for (
-                    uint256 k = 0;
-                    k < uniqueTokenCreators[masterTokenId].length;
-                    k++
-                ) {
-                    if (
-                        uniqueTokenCreators[masterTokenId][k] ==
-                        controlTokenArtists[i]
-                    ) {
-                        containsControlTokenArtist = true;
-                        break;
-                    }
-                }
-                if (containsControlTokenArtist == false) {
-                    uniqueTokenCreators[masterTokenId].push(
-                        controlTokenArtists[i]
-                    );
-                }
-            }
-        }
-    }
-
-    // function mintArtworkOptimised(
-    //     uint256 masterTokenId,
-    //     string calldata artworkTokenURI,
-    //     address payable[] calldata controlTokenArtists
-    // )
-    //     external
-    //     onlyWhitelistedCreator(masterTokenId, controlTokenArtists.length)
-    // {
-    //     // Can't mint a token with ID 0 anymore
-    //     require(masterTokenId > 0);
-    //     // Mint the token that represents ownership of the entire artwork
-    //     super._safeMint(msg.sender, masterTokenId);
-    //     // set the token URI for this art
-    //     super._setTokenURI(masterTokenId, artworkTokenURI);
-    //     // track the msg.sender address as the artist address for future royalties
-    //     uniqueTokenCreators[masterTokenId].push(msg.sender);
-    //     // iterate through all control token URIs (1 for each control token)
-    //     alreadyAdded[masterTokenId][msg.sender] = true;
-
-    //     for (uint256 i = 0; i < controlTokenArtists.length; i++) {
-    //         // can't provide burn address as artist
-    //         require(controlTokenArtists[i] != address(0));
-    //         // determine the tokenID for this control token
-    //         uint256 controlTokenId = masterTokenId + i + 1;
-    //         // add this control token artist to the unique creator list for that control token
-    //         uniqueTokenCreators[controlTokenId].push(controlTokenArtists[i]);
-    //         // stub in an existing control token so exists is true
-    //         // controlTokenMapping[controlTokenId] = ControlToken(
-    //         //     0,
-    //         //     0,
-    //         //     true,
-    //         //     false
-    //         // );
-
-    //         // Layer control tokens use the same royalty percentage as the master token
-    //         // platformFirstSalePercentages[
-    //         //     controlTokenId
-    //         // ] = platformFirstSalePercentages[masterTokenId];
-
-    //         // platformSecondSalePercentages[
-    //         //     controlTokenId
-    //         // ] = platformSecondSalePercentages[masterTokenId];
-
-    //         if (!alreadyAdded[masterTokenId][controlTokenArtists[i]]) {
-    //             uniqueTokenCreators[masterTokenId].push(controlTokenArtists[i]);
-    //             alreadyAdded[masterTokenId][controlTokenArtists[i]] = true;
-    //         }
-    //     }
-
-    //     alreadyAdded[masterTokenId][msg.sender] = false;
-    //     for (uint256 i = 0; i < controlTokenArtists.length; i++) {
-    //         alreadyAdded[masterTokenId][controlTokenArtists[i]] = false;
-    //     }
-    // }
-
-    function mintArtworkOptimised2(
         uint256 masterTokenId,
         string calldata artworkTokenURI,
         address payable[] calldata controlTokenArtists,

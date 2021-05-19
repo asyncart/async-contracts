@@ -136,6 +136,7 @@ contract("Async art", (accounts) => {
       masterToken1,
       "DATA",
       [user3, user3, user3, user3, user4],
+      [user3, user4],
       { from: user1 }
     );
 
@@ -144,14 +145,31 @@ contract("Async art", (accounts) => {
       masterToken7,
       "RANDOMDATA",
       [user2, user3, user3],
+      [user2, user3],
       {
         from: user2,
       }
     );
 
-    await asyncContract.mintArtwork(11, "RANDOMDATA", userArray, {
-      from: user2,
-    });
+    await asyncContract.mintArtwork(
+      11,
+      "RANDOMDATA",
+      userArray,
+      [user2, user3, user4, user5, user6, user8, user9],
+      {
+        from: user2,
+      }
+    );
+
+    await asyncContract.mintArtwork(
+      42,
+      "RANDOMDATA",
+      userArray,
+      [user2, user3, user4, user5, user6, user8, user9],
+      {
+        from: user2,
+      }
+    );
 
     // await asyncContract.mintArtworkOptimised2(
     //   42,
@@ -163,9 +181,6 @@ contract("Async art", (accounts) => {
     //   }
     // );
 
-    await asyncContract.mintArtworkOptimised(42, "RANDOMDATA", userArray, {
-      from: user2,
-    });
     ///////////////////////////////////////////////
     ////////// Admin functions called /////////////
     ///////////////////////////////////////////////
