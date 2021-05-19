@@ -54,3 +54,6 @@ deploy_rinkeby.sh
 deploy_mainnet.sh
 
 .openzeppelin/.session
+
+artifacts
+cache
