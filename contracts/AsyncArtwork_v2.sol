@@ -47,6 +47,11 @@ contract AsyncArtwork_v2 is
         uint256 platformSecondPercentage
     );
 
+    event DefaultPlatformSalePercentageUpdated(
+        uint256 defaultPlatformFirstSalePercentage,
+        uint256 defaultPlatformSecondSalePercentage
+    );
+
     // An event whenever artist secondary sale percentage is updated
     event ArtistSecondSalePercentUpdated(uint256 artistSecondPercentage);
 
@@ -170,7 +175,11 @@ contract AsyncArtwork_v2 is
     // the address of the contract that can whitelist artists to mint
     address public minterAddress;
 
-    function initialize(
+    // v3 vairables
+    uint256 public defaultPlatformFirstSalePercentage;
+    uint256 public defaultPlatformSecondSalePercentage;
+
+    function setup(
         string memory name,
         string memory symbol,
         uint256 initialExpectedTokenSupply,
@@ -299,6 +308,21 @@ contract AsyncArtwork_v2 is
         );
     }
 
+    // Allows platform to change the default sales percentages
+    function updateDefaultPlatformSalePercentage(
+        uint256 _defaultPlatformFirstSalePercentage,
+        uint256 _defaultPlatformSecondSalePercentage
+    ) external onlyPlatform {
+        defaultPlatformFirstSalePercentage = _defaultPlatformFirstSalePercentage;
+        defaultPlatformSecondSalePercentage = _defaultPlatformSecondSalePercentage;
+
+        // emit an event to notify that the platform percent has changed
+        emit DefaultPlatformSalePercentageUpdated(
+            defaultPlatformFirstSalePercentage,
+            defaultPlatformSecondSalePercentage
+        );
+    }
+
     // Allows the platform to change the minimum percent increase for incoming bids
     function updateMinimumBidIncreasePercent(uint256 _minBidIncreasePercent)
         external
@@ -358,11 +382,6 @@ contract AsyncArtwork_v2 is
         require(
             additionalCollaborators.length <= 50,
             "Too many collaborators."
-        );
-        // check that a control token exists for this token id
-        require(
-            controlTokenMapping[controlTokenId].exists,
-            "No control token found"
         );
         // ensure that this token is not setup yet
         require(
@@ -444,7 +463,7 @@ contract AsyncArtwork_v2 is
 
         // require that only the upgrader address is calling this method
         require(msg.sender == upgraderAddress, "Only upgrader can call.");
-
+        //dfef
         // preserve the unique token creators
         uniqueTokenCreators[tokenId] = uniqueTokenCreatorsForToken;
 
@@ -496,7 +515,8 @@ contract AsyncArtwork_v2 is
     function mintArtwork(
         uint256 masterTokenId,
         string calldata artworkTokenURI,
-        address payable[] calldata controlTokenArtists
+        address payable[] calldata controlTokenArtists,
+        address payable[] calldata uniqueArtists
     )
         external
         onlyWhitelistedCreator(masterTokenId, controlTokenArtists.length)
@@ -508,8 +528,9 @@ contract AsyncArtwork_v2 is
         // set the token URI for this art
         super._setTokenURI(masterTokenId, artworkTokenURI);
         // track the msg.sender address as the artist address for future royalties
-        uniqueTokenCreators[masterTokenId].push(msg.sender);
+        uniqueTokenCreators[masterTokenId] = uniqueArtists;
         // iterate through all control token URIs (1 for each control token)
+
         for (uint256 i = 0; i < controlTokenArtists.length; i++) {
             // can't provide burn address as artist
             require(controlTokenArtists[i] != address(0));
@@ -517,45 +538,6 @@ contract AsyncArtwork_v2 is
             uint256 controlTokenId = masterTokenId + i + 1;
             // add this control token artist to the unique creator list for that control token
             uniqueTokenCreators[controlTokenId].push(controlTokenArtists[i]);
-            // stub in an existing control token so exists is true
-            controlTokenMapping[controlTokenId] = ControlToken(
-                0,
-                0,
-                true,
-                false
-            );
-
-            // Layer control tokens use the same royalty percentage as the master token
-            platformFirstSalePercentages[
-                controlTokenId
-            ] = platformFirstSalePercentages[masterTokenId];
-
-            platformSecondSalePercentages[
-                controlTokenId
-            ] = platformSecondSalePercentages[masterTokenId];
-
-            if (controlTokenArtists[i] != msg.sender) {
-                bool containsControlTokenArtist = false;
-
-                for (
-                    uint256 k = 0;
-                    k < uniqueTokenCreators[masterTokenId].length;
-                    k++
-                ) {
-                    if (
-                        uniqueTokenCreators[masterTokenId][k] ==
-                        controlTokenArtists[i]
-                    ) {
-                        containsControlTokenArtist = true;
-                        break;
-                    }
-                }
-                if (containsControlTokenArtist == false) {
-                    uniqueTokenCreators[masterTokenId].push(
-                        controlTokenArtists[i]
-                    );
-                }
-            }
         }
     }
 
@@ -673,8 +655,18 @@ contract AsyncArtwork_v2 is
         // if the first sale already happened, then give the artist + platform the secondary royalty percentage
         if (tokenDidHaveFirstSale[tokenId]) {
             // give platform its secondary sale percentage
-            uint256 platformAmount =
-                saleAmount.mul(platformSecondSalePercentages[tokenId]).div(100);
+            uint256 platformAmount;
+            if (platformSecondSalePercentages[tokenId] == 0) {
+                // default amount
+                platformAmount = saleAmount
+                    .mul(defaultPlatformSecondSalePercentage)
+                    .div(100);
+            } else {
+                platformAmount = saleAmount
+                    .mul(platformSecondSalePercentages[tokenId])
+                    .div(100);
+            }
+
             safeFundsTransfer(platformAddress, platformAmount);
             // distribute the creator royalty amongst the creators (all artists involved for a base token, sole artist creator for layer )
             uint256 creatorAmount =
@@ -692,9 +684,20 @@ contract AsyncArtwork_v2 is
             );
         } else {
             tokenDidHaveFirstSale[tokenId] = true;
+
             // give platform its first sale percentage
-            uint256 platformAmount =
-                saleAmount.mul(platformFirstSalePercentages[tokenId]).div(100);
+            uint256 platformAmount;
+            if (platformFirstSalePercentages[tokenId] == 0) {
+                // default value
+                platformAmount = saleAmount
+                    .mul(defaultPlatformFirstSalePercentage)
+                    .div(100);
+            } else {
+                platformAmount = saleAmount
+                    .mul(platformFirstSalePercentages[tokenId])
+                    .div(100);
+            }
+
             safeFundsTransfer(platformAddress, platformAmount);
             // this is a token first sale, so distribute the remaining funds to the unique token creators of this token
             // (if it's a base token it will be all the unique creators, if it's a control token it will be that single artist)
@@ -745,7 +748,7 @@ contract AsyncArtwork_v2 is
         returns (int256)
     {
         require(
-            controlTokenMapping[controlTokenId].exists,
+            controlTokenMapping[controlTokenId].isSetup,
             "Token does not exist."
         );
 
@@ -759,7 +762,7 @@ contract AsyncArtwork_v2 is
         returns (int256[] memory)
     {
         require(
-            controlTokenMapping[controlTokenId].exists,
+            controlTokenMapping[controlTokenId].isSetup,
             "Token does not exist."
         );
 
@@ -810,7 +813,7 @@ contract AsyncArtwork_v2 is
         );
         // check if control exists
         require(
-            controlTokenMapping[controlTokenId].exists,
+            controlTokenMapping[controlTokenId].isSetup,
             "Token does not exist."
         );
         // get the control token reference
