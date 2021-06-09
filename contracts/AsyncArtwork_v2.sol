@@ -463,7 +463,7 @@ contract AsyncArtwork_v2 is
 
         // require that only the upgrader address is calling this method
         require(msg.sender == upgraderAddress, "Only upgrader can call.");
-        //dfef
+        
         // preserve the unique token creators
         uniqueTokenCreators[tokenId] = uniqueTokenCreatorsForToken;
 
@@ -527,10 +527,9 @@ contract AsyncArtwork_v2 is
         super._safeMint(msg.sender, masterTokenId);
         // set the token URI for this art
         super._setTokenURI(masterTokenId, artworkTokenURI);
-        // track the msg.sender address as the artist address for future royalties
+        // set the unique artists array for future royalties
         uniqueTokenCreators[masterTokenId] = uniqueArtists;
         // iterate through all control token URIs (1 for each control token)
-
         for (uint256 i = 0; i < controlTokenArtists.length; i++) {
             // can't provide burn address as artist
             require(controlTokenArtists[i] != address(0));
