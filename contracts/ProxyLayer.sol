@@ -15,7 +15,7 @@ interface IAsyncArtwork_v2 {
     ) external payable;
     function ownerOf(uint256 tokenId) external view returns (address);
     function getApproved(uint256 tokenId) external view returns (address);
-    // function isApprovedForAll(address owner, address operator) external view returns (bool);
+    function isApprovedForAll(address owner, address operator) external view returns (bool);
     function transferFrom(address from, address to, uint256 tokenId) external;
 
 }
@@ -56,6 +56,8 @@ contract ProxyLayer {
         // msg.sender has to be the current owner of the control token
         require(asyncArtwork_V2.ownerOf(_asycArtV2TokenId) == msg.sender, "Only owner of the control token.");
 
+        require(IERC721(_targetTokenAddress).ownerOf(_targetTokenId) != address(0), "Target token doesn't exist.");
+
         // has to be a valid control token (correctly set up)
         int256[] memory controlLevers = asyncArtwork_V2.getControlToken(_asycArtV2TokenId);
         require(controlLevers.length > 0, "Only a correctly set up control token.");
@@ -77,7 +79,8 @@ contract ProxyLayer {
         // msg.sender has to be the owner or approved by the owner
         IERC721 token = IERC721(controlledTokens[_asycArtV2TokenId].tokenAddress);
         uint256 tokenId = controlledTokens[_asycArtV2TokenId].tokenId;
-        require(token.ownerOf(tokenId) == msg.sender, "Only the NFT owner can use the proxy layer.");
+        address tokenOwner = token.ownerOf(tokenId);
+        require(tokenOwner == msg.sender || token.isApprovedForAll(tokenOwner, msg.sender) || token.getApproved(controlledTokens[_asycArtV2TokenId].tokenId) == msg.sender, "Only the NFT owner or an approved address can use the proxy layer.");
 
         // Relay the control token function
         asyncArtwork_V2.useControlToken.value(msg.value)(_asycArtV2TokenId, leverIds, newValues);

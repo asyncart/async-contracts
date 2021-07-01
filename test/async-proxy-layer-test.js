@@ -423,6 +423,14 @@ contract("Async art", (accounts) => {
 
     expect(await asyncContract.ownerOf(token2)).to.equal(user6)
 
+    await expectRevert(proxyLayer.permanentlyConvertToProxyLayer(token2, "0x0000000000000000000000000000000000000001", 9999, {
+      from: user6,
+    }), "function call to a non-contract account");
+
+    await expectRevert(proxyLayer.permanentlyConvertToProxyLayer(token2, nft1.address, 666, {
+      from: user6,
+    }), "ERC721: owner query for nonexistent token");
+
     await proxyLayer.permanentlyConvertToProxyLayer(token2, nft1.address, 9999, {
       from: user6,
     });
@@ -435,7 +443,7 @@ contract("Async art", (accounts) => {
 
     await expectRevert(proxyLayer.useProxyLayer(token2, [0, 1, 2], [6, 6, 6], {
       from: user6,
-    }), "Only the NFT owner can use the proxy layer.");
+    }), "Only the NFT owner or an approved address can use the proxy layer.");
 
     await proxyLayer.useProxyLayer(token2, [0, 1, 2], [6, 6, 6], {
       from: user7,
@@ -447,10 +455,35 @@ contract("Async art", (accounts) => {
 
     await expectRevert(proxyLayer.useProxyLayer(token2, [0, 1, 2], [6, 6, 6], {
       from: user7,
-    }), "Only the NFT owner can use the proxy layer.");
+    }), "Only the NFT owner or an approved address can use the proxy layer.");
 
     await proxyLayer.useProxyLayer(token2, [0, 1, 2], [5, 5, 5], {
       from: user6,
     });
+
+    await expectRevert(proxyLayer.useProxyLayer(token2, [0, 1, 2], [5, 5, 5], {
+      from: user7,
+    }), "Only the NFT owner or an approved address can use the proxy layer.");
+
+    await nft1.approve(user7, 9999, {
+      from: user6
+    });
+
+    await proxyLayer.useProxyLayer(token2, [0, 1, 2], [4, 4, 4], {
+      from: user7,
+    });
+
+    await expectRevert(proxyLayer.useProxyLayer(token2, [0, 1, 2], [5, 5, 5], {
+      from: user8,
+    }), "Only the NFT owner or an approved address can use the proxy layer.");
+
+    await nft1.setApprovalForAll(user8, true, {
+      from: user6
+    });
+
+    await proxyLayer.useProxyLayer(token2, [0, 1, 2], [5, 5, 5], {
+      from: user8,
+    });
+
   });
 });
